@@ -1,4 +1,4 @@
-        <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
@@ -9,7 +9,7 @@
     <style>
         :root { --primary: #ff85a2; --secondary: #4a90e2; --edit-color: #2ecc71; --delete-color: #ff85a2; }
         *, *::before, *::after { box-sizing: border-box; }
-        body { font-family: 'Kanit', sans-serif; margin: 0; background: linear-gradient(135deg, #a0c7f3 0%, #a0c7f3 100%); background-attachment: fixed; padding: 15px; }
+        body { font-family: 'Kanit', sans-serif; margin: 0; background: linear-gradient(135deg, #a0c7f3 0%, #a0c7f3 100%); background-attachment: fixed; padding: 15px; min-height: 100vh; overflow-y: auto; }
         
         .min-card { background: #ffffff; border: 1px solid #f0f0f0; transition: all 0.5s ease; cursor: pointer; position: relative; overflow: hidden; }
         .min-card:hover { border-color: #e2e8f0; box-shadow: 0 20px 40px rgba(36, 27, 27, 0.03); transform: translateY(-5px); }
@@ -30,8 +30,8 @@
         .shield-btn { position: absolute; top: -10px; right: 10px; cursor: pointer; font-size: 24px; transition: 0.3s; z-index: 50; }
         .shield-btn:hover { transform: scale(1.2) rotate(10deg); }
         
-        #adminTableWrapper { display: none; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.08); margin-top: 20px; }
-        .admin-tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px; flex-wrap: wrap; }
+        #adminTableWrapper { display: none; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.08); margin-top: 20px; max-height: 85vh; overflow-y: auto; }
+        .admin-tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px; flex-wrap: wrap; position: sticky; top: 0; background: white; z-index: 10; }
         .tab-btn { padding: 8px 15px; border-radius: 12px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.3s; background: #f8fafc; color: #64748b; }
         .tab-btn.active { background: var(--secondary); color: white; box-shadow: 0 4px 10px rgba(74, 144, 226, 0.3); }
         .admin-content-section { display: none; animation: fadeIn 0.4s ease; }
@@ -67,8 +67,16 @@
         .gang-item { background: #f8fafc; padding: 8px 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 13px; font-weight: 600; }
         
         /* New Styles for Logs */
-        .log-item { font-size: 11px; padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
+        .log-item { font-size: 11px; padding: 8px; border-bottom: 1px solid #eee; display: flex; flex-direction: column; gap: 2px; }
+        .log-header { display: flex; justify-content: space-between; align-items: center; }
+        .log-detail { font-size: 10px; color: #64748b; background: #f1f5f9; padding: 4px 8px; border-radius: 6px; margin-top: 4px; }
+        .log-tag-loc { font-size: 9px; padding: 2px 6px; border-radius: 4px; background: #e0f2fe; color: #0369a1; font-weight: bold; }
         .restore-btn { background: #2ecc71; color: white; padding: 2px 8px; border-radius: 5px; font-size: 10px; }
+
+        /* Custom Scrollbar for Admin Panel */
+        #adminTableWrapper::-webkit-scrollbar { width: 6px; }
+        #adminTableWrapper::-webkit-scrollbar-track { background: transparent; }
+        #adminTableWrapper::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
 <body class="flex items-center justify-center p-6">
@@ -111,12 +119,12 @@
                 <div id="tab-logs" class="admin-content-section">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="bg-slate-50 p-4 rounded-xl">
-                            <h4 class="text-[10px] font-bold mb-3 text-slate-500 uppercase">Activity Logs (ใครทำอะไร)</h4>
-                            <div id="logDisplay" class="max-h-60 overflow-y-auto"></div>
+                            <h4 class="text-[10px] font-bold mb-3 text-slate-500 uppercase">Activity Logs (ทุกเว็บไซต์)</h4>
+                            <div id="logDisplay" class="max-h-[400px] overflow-y-auto pr-2"></div>
                         </div>
                         <div class="bg-red-50 p-4 rounded-xl">
-                            <h4 class="text-[10px] font-bold mb-3 text-red-400 uppercase">Trash (กู้คืนข้อมูลที่ถูกลบ)</h4>
-                            <div id="trashDisplay" class="max-h-60 overflow-y-auto"></div>
+                            <h4 class="text-[10px] font-bold mb-3 text-red-400 uppercase">Trash (ถังขยะกลาง)</h4>
+                            <div id="trashDisplay" class="max-h-[400px] overflow-y-auto pr-2"></div>
                         </div>
                     </div>
                 </div>
@@ -159,12 +167,15 @@
         let pendingRedirect = '';
         const currentUser = localStorage.getItem('portalUser');
 
-        // Helper: บันทึก Log
-        async function saveLog(action, detail) {
+        const thaiSort = (a, b) => a.localeCompare(b, 'th', { sensitivity: 'base' });
+
+        // ปรับปรุงฟังก์ชัน saveLog ให้รับ location
+        async function saveLog(action, detail, location = "หน้าหลัก") {
             push(ref(db, 'activity_logs'), {
                 user: currentUser || 'Unknown',
                 action,
                 detail,
+                location: location,
                 timestamp: serverTimestamp()
             });
         }
@@ -277,8 +288,9 @@
 
         function renderUserTable(users) {
             const tbody = document.getElementById('userTableBody');
-            if(!tbody) return; tbody.innerHTML = "";
-            for (let name in users) {
+            if(!tbody || !users) return; tbody.innerHTML = "";
+            const sortedNames = Object.keys(users).sort(thaiSort);
+            sortedNames.forEach(name => {
                 const isMain = ADMINS.includes(name);
                 const { canEdit, canDelete, pin } = users[name];
                 let nClass = "user-name status-none";
@@ -295,7 +307,7 @@
                     <td>${!isMain?`<button onclick="deleteUser('${name}')" class="text-red-300 font-bold text-[10px]">DEL</button>`:'-'}</td>
                 `;
                 tbody.appendChild(tr);
-            }
+            });
         }
 
         window.updatePerm = (n, f, v) => {
@@ -314,11 +326,14 @@
             onValue(ref(db, 'gang_list'), (snap) => {
                 const display = document.getElementById('gangListDisplay'); if(!display) return;
                 display.innerHTML = ""; const gangs = snap.val();
-                if(gangs) Object.entries(gangs).forEach(([k, v]) => {
-                    const div = document.createElement('div'); div.className = "gang-item";
-                    div.innerHTML = `<span>${v.name||v}</span><button onclick="deleteGang('${k}', '${v.name||v}')" class="text-red-400">✕</button>`;
-                    display.appendChild(div);
-                });
+                if(gangs) {
+                    const sortedGangs = Object.entries(gangs).sort((a, b) => thaiSort(a[1].name || a[1], b[1].name || b[1]));
+                    sortedGangs.forEach(([k, v]) => {
+                        const div = document.createElement('div'); div.className = "gang-item";
+                        div.innerHTML = `<span>${v.name||v}</span><button onclick="deleteGang('${k}', '${v.name||v}')" class="text-red-400">✕</button>`;
+                        display.appendChild(div);
+                    });
+                }
             });
         }
         window.addGang = () => { 
@@ -332,7 +347,7 @@
         window.deleteGang = async (k, name) => {
             if(confirm("ลบตระกูลนี้?")) {
                 const snap = await get(child(ref(db), `gang_list/${k}`));
-                await set(ref(db, `trash/gangs/${k}`), snap.val()); // ย้ายไปถังขยะ
+                await set(ref(db, `trash/gangs/${k}`), {...snap.val(), deletedBy: currentUser, deletedAt: serverTimestamp(), type: 'gang'});
                 await remove(ref(db, `gang_list/${k}`));
                 saveLog("DELETE_GANG", `Deleted gang: ${name}`);
             }
@@ -342,11 +357,14 @@
             onValue(ref(db, 'rule_list'), (snap) => {
                 const display = document.getElementById('ruleListDisplay'); if(!display) return;
                 display.innerHTML = ""; const rules = snap.val();
-                if(rules) Object.entries(rules).forEach(([k, v]) => {
-                    const div = document.createElement('div'); div.className = "rule-item";
-                    div.innerHTML = `<div><span class="font-bold text-blue-500">[ข้อ ${v.no}]</span> ${v.detail}</div><button onclick="deleteRule('${k}', '${v.no}')" class="text-red-400">✕</button>`;
-                    display.appendChild(div);
-                });
+                if(rules) {
+                    const sortedRules = Object.entries(rules).sort((a, b) => parseInt(a[1].no) - parseInt(b[1].no));
+                    sortedRules.forEach(([k, v]) => {
+                        const div = document.createElement('div'); div.className = "rule-item";
+                        div.innerHTML = `<div><span class="font-bold text-blue-500">[ข้อ ${v.no}]</span> ${v.detail}</div><button onclick="deleteRule('${k}', '${v.no}')" class="text-red-400">✕</button>`;
+                        display.appendChild(div);
+                    });
+                }
             });
         }
         window.addRule = () => {
@@ -356,55 +374,85 @@
                 push(ref(db, 'rule_list'), {no, detail: det, fine, category: cat, selected: true}); 
                 saveLog("ADD_RULE", `Added rule no: ${no}`);
                 document.getElementById('ruleNo').value=""; 
+                document.getElementById('ruleDetail').value="";
+                document.getElementById('ruleFine').value="";
             }
         };
         window.deleteRule = async (k, no) => {
             if(confirm("ลบกฎข้อนี้?")) {
                 const snap = await get(child(ref(db), `rule_list/${k}`));
-                await set(ref(db, `trash/rules/${k}`), snap.val()); // ย้ายไปถังขยะ
+                await set(ref(db, `trash/rules/${k}`), {...snap.val(), deletedBy: currentUser, deletedAt: serverTimestamp(), type: 'rule'});
                 await remove(ref(db, `rule_list/${k}`));
                 saveLog("DELETE_RULE", `Deleted rule no: ${no}`);
             }
         };
 
-        // --- Jaokha Special Functions ---
+        // --- Jaokha Special Functions: Centralized Logs & Recycle ---
         function loadSpecialLogs() {
-            // Load Logs
             onValue(ref(db, 'activity_logs'), (snap) => {
                 const logBox = document.getElementById('logDisplay');
+                if(!logBox) return;
                 logBox.innerHTML = "";
                 const data = snap.val();
                 if(data) {
-                    Object.values(data).reverse().slice(0, 50).forEach(log => {
-                        const date = log.timestamp ? new Date(log.timestamp).toLocaleString() : '-';
-                        logBox.innerHTML += `<div class="log-item"><span><b>${log.user}</b>: ${log.action}</span><span class="text-[9px] text-gray-400">${date}</span></div>`;
+                    Object.values(data).reverse().slice(0, 100).forEach(log => {
+                        const date = log.timestamp ? new Date(log.timestamp).toLocaleString('th-TH') : '-';
+                        const locationTag = log.location ? `<span class="log-tag-loc">${log.location}</span>` : '';
+                        logBox.innerHTML += `
+                            <div class="log-item">
+                                <div class="log-header">
+                                    <span><b>${log.user}</b>: ${log.action}</span>
+                                    ${locationTag}
+                                </div>
+                                <div class="log-detail">${log.detail || '-'}</div>
+                                <span class="text-[9px] text-gray-400 mt-1">${date}</span>
+                            </div>`;
                     });
                 }
             });
 
-            // Load Trash for Recovery
             onValue(ref(db, 'trash'), (snap) => {
                 const trashBox = document.getElementById('trashDisplay');
+                if(!trashBox) return;
                 trashBox.innerHTML = "";
                 const trash = snap.val();
                 if(!trash) { trashBox.innerHTML = "<p class='text-[10px] text-center mt-4 opacity-50'>ถังขยะว่างเปล่า</p>"; return; }
 
+                // รายการกู้คืนจากทุกส่วน
                 if(trash.gangs) Object.entries(trash.gangs).forEach(([k, v]) => {
-                    trashBox.innerHTML += `<div class="log-item"><span>🏰 ${v.name}</span><button onclick="restoreItem('gangs','${k}')" class="restore-btn">กู้คืน</button></div>`;
+                    trashBox.innerHTML += `<div class="log-item"><div class="log-header"><span>🏰 ${v.name}</span><button onclick="restoreItem('gangs','${k}')" class="restore-btn">กู้คืน</button></div><div class="text-[9px] text-red-400">ลบโดย: ${v.deletedBy || 'Admin'}</div></div>`;
                 });
                 if(trash.rules) Object.entries(trash.rules).forEach(([k, v]) => {
-                    trashBox.innerHTML += `<div class="log-item"><span>📜 กฎข้อ ${v.no}</span><button onclick="restoreItem('rules','${k}')" class="restore-btn">กู้คืน</button></div>`;
+                    trashBox.innerHTML += `<div class="log-item"><div class="log-header"><span>📜 กฎข้อ ${v.no}</span><button onclick="restoreItem('rules','${k}')" class="restore-btn">กู้คืน</button></div><div class="text-[9px] text-red-400">ลบโดย: ${v.deletedBy || 'Admin'}</div></div>`;
+                });
+                if(trash.web_data) Object.entries(trash.web_data).forEach(([k, v]) => {
+                    trashBox.innerHTML += `<div class="log-item"><div class="log-header"><span>🌐 ข้อมูลจาก ${v.location}</span><button onclick="restoreItem('web_data','${k}')" class="restore-btn">กู้คืน</button></div><div class="log-detail">${v.detail || v.name || ''}</div></div>`;
                 });
             });
         }
 
         window.restoreItem = async (type, id) => {
-            const path = type === 'gangs' ? 'gang_list' : 'rule_list';
+            let path = '';
+            if(type === 'gangs') path = 'gang_list';
+            else if(type === 'rules') path = 'rule_list';
+            else if(type === 'web_data') {
+                // สำหรับข้อมูลจากเว็บย่อย ให้ดึง path เดิมกลับไป
+                const trashSnap = await get(child(ref(db), `trash/web_data/${id}`));
+                path = trashSnap.val().originalPath;
+            }
+
             const snap = await get(child(ref(db), `trash/${type}/${id}`));
             if(snap.exists()){
-                await set(ref(db, `${path}/${id}`), snap.val());
+                const data = snap.val();
+                // ลบฟิลด์ที่ใช้สำหรับถังขยะออกก่อนคืนค่า
+                delete data.deletedBy;
+                delete data.deletedAt;
+                delete data.type;
+                if(data.originalPath) delete data.originalPath;
+
+                await set(ref(db, `${path}/${id}`), data);
                 await remove(ref(db, `trash/${type}/${id}`));
-                saveLog("RESTORE", `Restored ${type} item`);
+                saveLog("RESTORE", `Restored item to ${path}`, "ระบบกู้คืน");
                 alert("กู้คืนข้อมูลสำเร็จ!");
             }
         };
