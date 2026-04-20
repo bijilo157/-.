@@ -575,6 +575,23 @@ window.copyText = function(id,btn){
     }, 2000);
 }
 
+// --- เพิ่มระบบ Enter สำหรับบันทึกข้อมูล ---
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter') {
+        const warnPage = document.getElementById('warnPage');
+        const coolPage = document.getElementById('coolPage');
+        const casePage = document.getElementById('casePage');
+
+        if (warnPage.style.display === 'block') {
+            warn();
+        } else if (coolPage.style.display === 'block') {
+            cooldown();
+        } else if (casePage.style.display === 'block') {
+            caseMsg();
+        }
+    }
+});
+
 showPage("warnPage");
 
 </script>
