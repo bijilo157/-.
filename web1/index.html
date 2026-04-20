@@ -137,7 +137,17 @@ button.copy.success {
     margin-bottom: 8px;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 5px;
+}
+
+.history-user {
+    background: #ffeef2;
+    color: #ff6f9c;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    border: 1px solid #ffccd5;
 }
 
 .history-text {
@@ -184,6 +194,7 @@ optgroup { font-weight: bold; color: #ff6f9c; background: #fff0f5; }
 <body>
 
 <h1>⚙️ ประกาศ Time Town ⚙️</h1>
+
 <div class="menu">
 <button onclick="showPage('warnPage')">ประกาศตักเตือน</button>
 <button onclick="showPage('coolPage')">ประกาศคูลดาวน์</button>
@@ -312,6 +323,11 @@ function customSort(a, b) {
     return a.localeCompare(b, 'th', { numeric: true, sensitivity: 'base' });
 }
 
+// --- ฟังก์ชันดึงชื่ออัตโนมัติ (เก็บไว้ใช้หลังบ้าน) ---
+function getAutoUser() {
+    return localStorage.getItem('portalUser') || "ไม่ระบุชื่อ";
+}
+
 // --- Sync Portal Data ---
 function syncPortalData() {
     onValue(gangListRef, (snapshot) => {
@@ -368,7 +384,7 @@ function syncPortalData() {
 
             sortedRules.forEach(r => {
                 const isSelected = r.selected !== false;
-                const category = r.category || 'basic'; // รองรับ category 'basic' ตามภาพ Firebase
+                const category = r.category || 'basic';
                 let colorClass = (category === 'blacklist' || category === 'story') ? 'text-danger' : 'text-normal';
 
                 if (isSelected && select) {
@@ -377,7 +393,6 @@ function syncPortalData() {
                     opt.value = `${r.no}|${r.fine}|${r.detail}`;
                     opt.textContent = `ข้อที่ ${r.no} ${r.detail} (${Number(r.fine).toLocaleString()})`;
                     
-                    // เพิ่มลงกลุ่มที่ถูกต้อง (ถ้า category เป็น basic หรือ normal ให้ลงกลุ่ม basic)
                     if (category === 'basic' || category === 'normal') {
                         groups.basic.appendChild(opt);
                     } else if (groups[category]) {
@@ -462,8 +477,10 @@ function date(){
 // --- 3. Firebase Data Handling ---
 
 window.saveHistory = function(text){
+    const user = getAutoUser(); 
     push(logRef, {
         text: text,
+        user: user,
         time: time() + " " + date(),
         timestamp: Date.now()
     });
@@ -479,7 +496,10 @@ onValue(logRef, (snapshot) => {
             let div = document.createElement("div");
             div.className = "history-item";
             div.innerHTML = `
-                <div class="history-time">🕒 ${item.time}</div>
+                <div class="history-time">
+                    <span>🕒 ${item.time}</span>
+                    <span class="history-user">👤 ${item.user || 'ไม่ระบุ'}</span>
+                </div>
                 <div class="history-text">${item.text}</div>
                 <button class="delete-log-btn" onclick="deleteLog('${key}')">🗑 ลบ</button>
             `;
@@ -489,7 +509,7 @@ onValue(logRef, (snapshot) => {
 });
 
 window.deleteLog = function(key){
-    if(confirm("ยืนยันการลบรายการนี้? ทุกคนจะมองไม่เห็นรายการนี้อีก")){
+    if(confirm("ยืนยันการลบรายการนี้?")){
         remove(ref(db, `announcement_logs/${key}`));
     }
 }
@@ -544,15 +564,11 @@ window.copyText = function(id,btn){
     if(!text) return;
     
     navigator.clipboard.writeText(text);
-    
-    // เปลี่ยนสถานะปุ่มเป็นสีเขียวและข้อความสำเร็จ
     btn.innerText="คัดลอกสำเร็จ ✓";
     btn.classList.add("success");
     
-    // บันทึกลงหน้าประวัติ
     saveHistory(text);
     
-    // คืนค่าปุ่มเดิมหลังจาก 2 วินาที
     setTimeout(() => { 
         btn.innerText = "คัดลอก"; 
         btn.classList.remove("success");
