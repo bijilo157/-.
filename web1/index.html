@@ -187,6 +187,13 @@ button.copy.success {
 .text-normal { color: #333; }
 optgroup { font-weight: bold; color: #ff6f9c; background: #fff0f5; }
 
+/* CSS ใหม่สำหรับ Toggle Fam/Gang */
+.type-container { display: flex; gap: 8px; margin-bottom: 10px; margin-top: 5px; }
+.type-btn { flex: 1; padding: 8px; border-radius: 10px; font-size: 11px; cursor: pointer; font-weight: bold; border: 2px solid transparent; text-align: center; transition: 0.2s; }
+.active-fam { background: #fff5f8; color: var(--primary); border-color: var(--primary); }
+.active-gang { background: #f0f7ff; color: var(--secondary); border-color: var(--secondary); }
+.inactive { background: #f1f5f9; color: #94a3b8; }
+
 </style>
 </head>
 
@@ -207,9 +214,14 @@ optgroup { font-weight: bold; color: #ff6f9c; background: #fff0f5; }
 
 <h2>📢 ประกาศตักเตือน</h2>
 
-<label>เลือกแก๊ง</label>
-<select id="gang">
-    </select>
+<label>เลือกประเภท</label>
+<div class="type-container">
+    <div id="warnTypeFam" class="type-btn active-fam" onclick="setSelectType('warn', 'fam')">🌸 FAMILY</div>
+    <div id="warnTypeGang" class="type-btn inactive" onclick="setSelectType('warn', 'gang')">🛡️ GANG</div>
+</div>
+
+<label>เลือกตระกูล</label>
+<select id="gang"></select>
 
 <label>เตือนครั้งที่</label>
 <select id="warnLevel">
@@ -255,9 +267,14 @@ optgroup { font-weight: bold; color: #ff6f9c; background: #fff0f5; }
 
 <h2>⏱ ประกาศคูลดาวน์</h2>
 
-<label>เลือกแก๊ง</label>
-<select id="coolGang">
-    </select>
+<label>เลือกประเภท</label>
+<div class="type-container">
+    <div id="coolTypeFam" class="type-btn active-fam" onclick="setSelectType('cool', 'fam')">🌸 FAMILY</div>
+    <div id="coolTypeGang" class="type-btn inactive" onclick="setSelectType('cool', 'gang')">🛡️ GANG</div>
+</div>
+
+<label>เลือกตระกูล</label>
+<select id="coolGang"></select>
 
 <button class="action" onclick="cooldown()">สร้างประกาศ</button>
 
@@ -328,37 +345,60 @@ function getAutoUser() {
     return localStorage.getItem('portalUser') || "ไม่ระบุชื่อ";
 }
 
+// --- ตัวแปรเก็บประเภทที่เลือก ---
+let currentWarnType = 'fam';
+let currentCoolType = 'fam';
+let allGangsData = {};
+
+window.setSelectType = function(page, type) {
+    if(page === 'warn') {
+        currentWarnType = type;
+        document.getElementById('warnTypeFam').className = type === 'fam' ? 'type-btn active-fam' : 'type-btn inactive';
+        document.getElementById('warnTypeGang').className = type === 'gang' ? 'type-btn active-gang' : 'type-btn inactive';
+    } else {
+        currentCoolType = type;
+        document.getElementById('coolTypeFam').className = type === 'fam' ? 'type-btn active-fam' : 'type-btn inactive';
+        document.getElementById('coolTypeGang').className = type === 'gang' ? 'type-btn active-gang' : 'type-btn inactive';
+    }
+    renderGangSelects();
+}
+
+function renderGangSelects() {
+    const gangSelect = document.getElementById('gang');
+    const coolSelect = document.getElementById('coolGang');
+    
+    if(gangSelect) gangSelect.innerHTML = "";
+    if(coolSelect) coolSelect.innerHTML = "";
+
+    const sortedGangs = Object.keys(allGangsData).map(key => ({
+        name: typeof allGangsData[key] === 'object' ? allGangsData[key].name : allGangsData[key],
+        type: typeof allGangsData[key] === 'object' ? allGangsData[key].type : 'fam',
+        selected: typeof allGangsData[key] === 'object' ? (allGangsData[key].selected !== false) : true
+    })).sort((a, b) => customSort(a.name, b.name));
+
+    sortedGangs.forEach(item => {
+        if (item.selected) {
+            if (item.type === currentWarnType && gangSelect) {
+                const opt = document.createElement('option');
+                opt.value = item.name;
+                opt.textContent = item.name;
+                gangSelect.appendChild(opt);
+            }
+            if (item.type === currentCoolType && coolSelect) {
+                const opt = document.createElement('option');
+                opt.value = item.name;
+                opt.textContent = item.name;
+                coolSelect.appendChild(opt);
+            }
+        }
+    });
+}
+
 // --- Sync Portal Data ---
 function syncPortalData() {
     onValue(gangListRef, (snapshot) => {
-        const gangs = snapshot.val();
-        const gangSelects = ['gang', 'coolGang'];
-        gangSelects.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.innerHTML = "";
-        });
-
-        if (gangs) {
-            const sortedGangs = Object.keys(gangs).map(key => ({
-                key: key,
-                name: typeof gangs[key] === 'object' ? gangs[key].name : gangs[key],
-                selected: typeof gangs[key] === 'object' ? (gangs[key].selected !== false) : true
-            })).sort((a, b) => customSort(a.name, b.name));
-
-            sortedGangs.forEach(item => {
-                if (item.selected) {
-                    gangSelects.forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) {
-                            const opt = document.createElement('option');
-                            opt.value = item.name;
-                            opt.textContent = item.name;
-                            el.appendChild(opt);
-                        }
-                    });
-                }
-            });
-        }
+        allGangsData = snapshot.val() || {};
+        renderGangSelects();
     });
 
     onValue(ruleListRef, (snapshot) => {
@@ -525,16 +565,20 @@ window.warn = function(){
     let ruleText=getRuleText();
     let statusText = status=="ชำระแล้ว" ? "+สถานะ : ชำระแล้ว" : "-สถานะ : ยังไม่ชำระ";
 
-    let fivem=`/gov ประกาศตักเตือน แก๊ง ${gang} เนื่องจาก ${reason} เตือนครั้งที่ ${level} รวม ตักเตือน ${level} ครั้ง ขอบคุณค่ะ/ครับ`;
-    let discord=`📢 ประกาศตักเตือน\nแก๊ง ${gang}\nเหตุผล : ${reason}\nเตือนครั้งที่ ${level}`;
+    // กำหนดคำนำหน้าประเภท
+    let typeLabel = currentWarnType === 'fam' ? 'แก๊ง' : 'แก๊ง'; 
+    if(!gang) return alert("กรุณาเลือกตระกูล");
+
+    let fivem=`/gov ประกาศตักเตือน ${typeLabel} ${gang} เนื่องจาก ${reason} เตือนครั้งที่ ${level} รวม ตักเตือน ${level} ครั้ง ขอบคุณค่ะ/ครับ`;
+    let discord=`📢 ประกาศตักเตือน\n${typeLabel} ${gang}\nเหตุผล : ${reason}\nเตือนครั้งที่ ${level}`;
 
     if(level==2){
         if(status=="ยังไม่ชำระ"){
-            fivem=`/gov ประกาศ Blacklist แก๊ง ${gang} เนื่องจาก ${reason} ขอบคุณครับ/ค่ะ`;
+            fivem=`/gov ประกาศ Blacklist ${typeLabel} ${gang} เนื่องจาก ${reason} ขอบคุณครับ/ค่ะ`;
         }else{
-            fivem=`/gov ประกาศปลด Blacklist แก๊ง ${gang} เนื่องจาก ชำระแล้ว`;
+            fivem=`/gov ประกาศปลด Blacklist ${typeLabel} ${gang} เนื่องจาก ชำระแล้ว`;
         }
-        discord=`#  ⛔  __ BLACKLIST __ ⛔\n\n\`\`\`diff\nแก๊ง : ${gang}\nหัวข้อ : BLACKLIST ข้อที่ ${ruleText} เนื่องจาก ${reason}\n( เมื่อเวลา ${time()} น. วันที่ ${date()} )\nค่าปรับ : ${fine} TD\n${statusText}\n\`\`\`\n\n<@&1335511632587128954> <@&1364843875105243206>`;
+        discord=`#  ⛔  __ BLACKLIST __ ⛔\n\n\`\`\`diff\n${typeLabel} : ${gang}\nหัวข้อ : BLACKLIST ข้อที่ ${ruleText} เนื่องจาก ${reason}\n( เมื่อเวลา ${time()} น. วันที่ ${date()} )\nค่าปรับ : ${fine} TD\n${statusText}\n\`\`\`\n\n<@&1335511632587128954> <@&1364843875105243206>`;
     }
     document.getElementById("warnFiveM").innerText=fivem;
     document.getElementById("warnDiscord").innerText=discord;
@@ -542,11 +586,13 @@ window.warn = function(){
 
 window.cooldown = function(){
     let gang=document.getElementById("coolGang").value;
+    if(!gang) return alert("กรุณาเลือกตระกูล");
     let now=new Date();
     let end=new Date(now.getTime()+10*60000);
     let start=now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
     let stop=end.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
-    let text=`ประกาศ รบกวน แก๊ง ${gang} ออกจากพื้นที่โรงพยาบาลภายใน ระยะเวลา 10 นาที เริ่มตั้งแต่เวลา ${start} ถึง ${stop} น. ขอบคุณครับ/ค่ะ`;
+    let typeLabel = currentCoolType === 'fam' ? 'แก๊ง' : 'แก๊ง';
+    let text=`ประกาศ รบกวน ${typeLabel} ${gang} ออกจากพื้นที่โรงพยาบาลภายใน ระยะเวลา 10 นาที เริ่มตั้งแต่เวลา ${start} ถึง ${stop} น. ขอบคุณครับ/ค่ะ`;
     document.getElementById("coolFiveM").innerText="/gov "+text;
     document.getElementById("coolDiscord").innerText=`\`\`\`\n${text}\n\`\`\`\n<@&1335511632587128954> <@&1364843875105243206>`;
 }
