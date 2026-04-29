@@ -36,15 +36,21 @@
         margin-top: -10px;
     }
     .dropdown-header {
-        background: #fdf2f5; padding: 10px; font-size: 16px; color: #666; text-align: center; font-weight: 800; border-bottom: 1px solid #eee; border-top: 1px solid #eee;
+        background: #fdf2f5; padding: 10px; font-size: 16px; text-align: center; font-weight: 800; border-bottom: 1px solid #eee; border-top: 1px solid #eee;
+    }
+    .dropdown-header.gang-header, .dropdown-header.family-header {
+        color: #ff6f9c !important;
+        background: #fff0f5;
+        font-size: 17px;
     }
     .dropdown-item { 
         padding: 12px; cursor: pointer; font-weight: 900; font-size: 18px; 
-        text-align: center; border-bottom: 1px solid #eee; color: #555;
+        text-align: center; border-bottom: 1px solid #eee; 
+        color: #000000 !important;
     }
     .dropdown-item:last-child { border-bottom: none; }
     .dropdown-item.selected, .dropdown-item:hover { 
-        background-color: var(--primary); color: white; 
+        background-color: var(--primary); color: white !important; 
     }
 
     /* Table & Dashboard styles */
@@ -211,15 +217,10 @@
         const data = snap.val();
         let rawList = [];
         if(data) Object.values(data).forEach(g => rawList.push(typeof g === 'object' ? g.name : g));
-        
         const sorter = (a, b) => a.localeCompare(b, 'th', { numeric: true, sensitivity: 'base' });
-        
-        // กรองแยกกลุ่ม
         const gangList = rawList.filter(n => n.includes("แก๊ง")).sort(sorter);
         const famList = rawList.filter(n => !n.includes("แก๊ง") && n !== "ประชาชน").sort(sorter);
-        
-        // รวมแบบเรียงลำดับ: แก๊งก่อน -> ประชาชน -> แฟม
-        gangs = [...gangList, "ประชาชน", ...famList];
+        gangs = ["ประชาชน", ...gangList, ...famList]; 
     });
 
     onValue(salesRef, (snap) => {
@@ -230,7 +231,6 @@
 
     onValue(lockRef, (snap) => { closedDays = snap.val() || {}; checkLockStatus(); renderHistory(); });
 
-    // --- ส่วน Dropdown ค้นหาคนซื้อ ---
     window.filterGangs = function() {
         const input = document.getElementById('buyer');
         const val = input.value.toLowerCase();
@@ -239,21 +239,26 @@
         currentFocus = -1;
 
         const filtered = gangs.filter(g => g.toLowerCase().includes(val));
-        
         if(filtered.length > 0) {
             list.style.display = "block";
-            
-            const gGroup = filtered.filter(n => n.includes("แก๊ง"));
-            const fGroup = filtered.filter(n => !n.includes("แก๊ง"));
+            const hasCitizen = filtered.filter(n => n === "ประชาชน");
+            if(hasCitizen.length > 0) hasCitizen.forEach(g => createItem(g, list));
 
+            const gGroup = filtered.filter(n => n.includes("แก๊ง"));
             if(gGroup.length > 0) {
-                let h = document.createElement("div"); h.className="dropdown-header"; h.innerText="-- กลุ่มแก๊ง --";
+                let h = document.createElement("div"); 
+                h.className="dropdown-header gang-header"; 
+                h.innerText="🛡️ รายชื่อ GANG"; 
                 list.appendChild(h);
                 gGroup.forEach(g => createItem(g, list));
             }
 
+            const fGroup = filtered.filter(n => !n.includes("แก๊ง") && n !== "ประชาชน");
             if(fGroup.length > 0) {
-                // เอาหัวข้อ -- กลุ่มแฟม / ประชาชน -- ออกแล้ว
+                let h = document.createElement("div"); 
+                h.className="dropdown-header family-header"; 
+                h.innerText="🌸 รายชื่อ FAMILY"; 
+                list.appendChild(h);
                 fGroup.forEach(g => createItem(g, list));
             }
         } else { list.style.display = "none"; }
@@ -269,7 +274,6 @@
     }
 
     window.showGangs = function() { if(!document.getElementById('buyer').value) filterGangs(); };
-    
     function selectGang(val) {
         document.getElementById('buyer').value = val;
         document.getElementById('gangDropdown').style.display = "none";
@@ -316,7 +320,6 @@
         for (let i = 0; i < items.length; i++) items[i].classList.remove("selected");
     }
 
-    // --- ส่วนการจัดการข้อมูลพื้นฐานอื่นๆ ---
     window.onload = () => { 
         document.getElementById('displayUserName').innerText = "👤 " + getCurrentUser();
         syncDate(new Date().toLocaleDateString('sv-SE')); showPage('home'); 
