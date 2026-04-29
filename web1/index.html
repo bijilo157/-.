@@ -70,6 +70,7 @@ input,select{
     border:1px solid #ffc2d3;
     background:#fff5f8;
     font-family: 'Kanit', sans-serif;
+    color: black; /* กำหนดให้ตัวหนังสือเริ่มต้นเป็นสีดำ */
 }
 
 button.action{
@@ -182,17 +183,13 @@ button.copy.success {
 .list-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; font-size: 14px; }
 .delete-btn { background: #ff4d4d; color: white; border: none; border-radius: 5px; cursor: pointer; padding: 2px 8px; }
 
-/* สีพิเศษสำหรับหัวข้อกฎ */
-.text-danger { color: #ff0000 !important; font-weight: bold; }
-.text-normal { color: #333; }
-optgroup { font-weight: bold; color: #ff6f9c; background: #fff0f5; }
+/* การจัดการสีของ optgroup และ option */
+optgroup { font-weight: bold; background: #fff0f5; }
+optgroup[label*="FAMILY"], optgroup[label*="GANG"], optgroup[label*="โรงพยาบาล"] { color: #ff6f9c !important; }
+optgroup[label*="BLACKLIST"], optgroup[label*="สตอรี่"] { color: #ff0000 !important; }
 
-/* CSS ใหม่สำหรับ Toggle Fam/Gang */
-.type-container { display: flex; gap: 8px; margin-bottom: 10px; margin-top: 5px; }
-.type-btn { flex: 1; padding: 8px; border-radius: 10px; font-size: 11px; cursor: pointer; font-weight: bold; border: 2px solid transparent; text-align: center; transition: 0.2s; }
-.active-fam { background: #fff5f8; color: var(--primary); border-color: var(--primary); }
-.active-gang { background: #f0f7ff; color: var(--secondary); border-color: var(--secondary); }
-.inactive { background: #f1f5f9; color: #94a3b8; }
+/* รายการย่อย (Option) ให้เป็นสีดำปกติเสมอ */
+option { color: black !important; font-weight: normal; background: white; }
 
 </style>
 </head>
@@ -214,14 +211,10 @@ optgroup { font-weight: bold; color: #ff6f9c; background: #fff0f5; }
 
 <h2>📢 ประกาศตักเตือน</h2>
 
-<label>เลือกแก๊ง/แฟม</label>
-<div class="type-container">
-    <div id="warnTypeFam" class="type-btn active-fam" onclick="setSelectType('warn', 'fam')">🌸 FAMILY</div>
-    <div id="warnTypeGang" class="type-btn inactive" onclick="setSelectType('warn', 'gang')">🛡️ GANG</div>
-</div>
-
-<label>เลือกแก๊ง/แฟม</label>
-<select id="gang"></select>
+<label>เลือกตระกูล</label>
+<select id="gang">
+    <option value="">-- โปรดเลือกตระกูล --</option>
+</select>
 
 <label>เตือนครั้งที่</label>
 <select id="warnLevel">
@@ -267,14 +260,10 @@ optgroup { font-weight: bold; color: #ff6f9c; background: #fff0f5; }
 
 <h2>⏱ ประกาศคูลดาวน์</h2>
 
-<label>เลือกประเภท</label>
-<div class="type-container">
-    <div id="coolTypeFam" class="type-btn active-fam" onclick="setSelectType('cool', 'fam')">🌸 FAMILY</div>
-    <div id="coolTypeGang" class="type-btn inactive" onclick="setSelectType('cool', 'gang')">🛡️ GANG</div>
-</div>
-
-<label>เลือกแก๊ง/แฟม</label>
-<select id="coolGang"></select>
+<label>เลือกตระกูล</label>
+<select id="coolGang">
+    <option value="">-- โปรดเลือกตระกูล --</option>
+</select>
 
 <button class="action" onclick="cooldown()">สร้างประกาศ</button>
 
@@ -345,52 +334,43 @@ function getAutoUser() {
     return localStorage.getItem('portalUser') || "ไม่ระบุชื่อ";
 }
 
-// --- ตัวแปรเก็บประเภทที่เลือก ---
-let currentWarnType = 'fam';
-let currentCoolType = 'fam';
 let allGangsData = {};
 
-window.setSelectType = function(page, type) {
-    if(page === 'warn') {
-        currentWarnType = type;
-        document.getElementById('warnTypeFam').className = type === 'fam' ? 'type-btn active-fam' : 'type-btn inactive';
-        document.getElementById('warnTypeGang').className = type === 'gang' ? 'type-btn active-gang' : 'type-btn inactive';
-    } else {
-        currentCoolType = type;
-        document.getElementById('coolTypeFam').className = type === 'fam' ? 'type-btn active-fam' : 'type-btn inactive';
-        document.getElementById('coolTypeGang').className = type === 'gang' ? 'type-btn active-gang' : 'type-btn inactive';
-    }
-    renderGangSelects();
-}
-
 function renderGangSelects() {
-    const gangSelect = document.getElementById('gang');
-    const coolSelect = document.getElementById('coolGang');
+    const gangSelects = [document.getElementById('gang'), document.getElementById('coolGang')];
     
-    if(gangSelect) gangSelect.innerHTML = "";
-    if(coolSelect) coolSelect.innerHTML = "";
+    gangSelects.forEach(select => {
+        if(!select) return;
+        select.innerHTML = '<option value="">-- โปรดเลือกตระกูล --</option>';
 
-    const sortedGangs = Object.keys(allGangsData).map(key => ({
-        name: typeof allGangsData[key] === 'object' ? allGangsData[key].name : allGangsData[key],
-        type: typeof allGangsData[key] === 'object' ? allGangsData[key].type : 'fam',
-        selected: typeof allGangsData[key] === 'object' ? (allGangsData[key].selected !== false) : true
-    })).sort((a, b) => customSort(a.name, b.name));
+        const sortedGangs = Object.keys(allGangsData).map(key => ({
+            name: typeof allGangsData[key] === 'object' ? allGangsData[key].name : allGangsData[key],
+            type: typeof allGangsData[key] === 'object' ? allGangsData[key].type : 'fam',
+            selected: typeof allGangsData[key] === 'object' ? (allGangsData[key].selected !== false) : true
+        })).sort((a, b) => customSort(a.name, b.name));
 
-    sortedGangs.forEach(item => {
-        if (item.selected) {
-            if (item.type === currentWarnType && gangSelect) {
+        const groupFam = document.createElement('optgroup');
+        groupFam.label = "🌸 รายชื่อ FAMILY";
+        const groupGang = document.createElement('optgroup');
+        groupGang.label = "🛡️ รายชื่อ GANG";
+
+        sortedGangs.forEach(item => {
+            if (item.selected) {
                 const opt = document.createElement('option');
                 opt.value = item.name;
                 opt.textContent = item.name;
-                gangSelect.appendChild(opt);
+                opt.dataset.type = item.type;
+                
+                if (item.type === 'fam') {
+                    groupFam.appendChild(opt);
+                } else {
+                    groupGang.appendChild(opt);
+                }
             }
-            if (item.type === currentCoolType && coolSelect) {
-                const opt = document.createElement('option');
-                opt.value = item.name;
-                opt.textContent = item.name;
-                coolSelect.appendChild(opt);
-            }
-        }
+        });
+
+        if(groupFam.children.length > 0) select.appendChild(groupFam);
+        if(groupGang.children.length > 0) select.appendChild(groupGang);
     });
 }
 
@@ -425,11 +405,9 @@ function syncPortalData() {
             sortedRules.forEach(r => {
                 const isSelected = r.selected !== false;
                 const category = r.category || 'basic';
-                let colorClass = (category === 'blacklist' || category === 'story') ? 'text-danger' : 'text-normal';
 
                 if (isSelected && select) {
                     const opt = document.createElement('option');
-                    opt.className = colorClass;
                     opt.value = `${r.no}|${r.fine}|${r.detail}`;
                     opt.textContent = `ข้อที่ ${r.no} ${r.detail} (${Number(r.fine).toLocaleString()})`;
                     
@@ -557,7 +535,12 @@ window.deleteLog = function(key){
 // --- 4. Logic Functions ---
 
 window.warn = function(){
-    let gang=document.getElementById("gang").value;
+    let select = document.getElementById("gang");
+    let gang = select.value;
+    let selectedOption = select.options[select.selectedIndex];
+    if(!gang) return alert("กรุณาเลือกตระกูล");
+    let type = selectedOption.dataset.type;
+
     let reason=document.getElementById("reason").value;
     let fine=document.getElementById("fine").value;
     let status=document.getElementById("status").value;
@@ -565,9 +548,7 @@ window.warn = function(){
     let ruleText=getRuleText();
     let statusText = status=="ชำระแล้ว" ? "+สถานะ : ชำระแล้ว" : "-สถานะ : ยังไม่ชำระ";
 
-    // กำหนดคำนำหน้าประเภท
-    let typeLabel = currentWarnType === 'fam' ? 'แก๊ง' : 'แก๊ง'; 
-    if(!gang) return alert("กรุณาเลือกตระกูล");
+    let typeLabel = (type === 'fam') ? 'แก๊ง' : 'แก๊ง'; 
 
     let fivem=`/gov ประกาศตักเตือน ${typeLabel} ${gang} เนื่องจาก ${reason} เตือนครั้งที่ ${level} รวม ตักเตือน ${level} ครั้ง ขอบคุณค่ะ/ครับ`;
     let discord=`📢 ประกาศตักเตือน\n${typeLabel} ${gang}\nเหตุผล : ${reason}\nเตือนครั้งที่ ${level}`;
@@ -585,13 +566,18 @@ window.warn = function(){
 }
 
 window.cooldown = function(){
-    let gang=document.getElementById("coolGang").value;
+    let select = document.getElementById("coolGang");
+    let gang = select.value;
+    let selectedOption = select.options[select.selectedIndex];
     if(!gang) return alert("กรุณาเลือกตระกูล");
+    let type = selectedOption.dataset.type;
+
     let now=new Date();
     let end=new Date(now.getTime()+10*60000);
     let start=now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
     let stop=end.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
-    let typeLabel = currentCoolType === 'fam' ? 'แก๊ง' : 'แก๊ง';
+    
+    let typeLabel = (type === 'fam') ? 'แก๊ง' : 'แก๊ง';
     let text=`ประกาศ รบกวน ${typeLabel} ${gang} ออกจากพื้นที่โรงพยาบาลภายใน ระยะเวลา 10 นาที เริ่มตั้งแต่เวลา ${start} ถึง ${stop} น. ขอบคุณครับ/ค่ะ`;
     document.getElementById("coolFiveM").innerText="/gov "+text;
     document.getElementById("coolDiscord").innerText=`\`\`\`\n${text}\n\`\`\`\n<@&1335511632587128954> <@&1364843875105243206>`;
