@@ -224,8 +224,7 @@
         </div>
         <div class="mt-24 text-center text-[9px] text-gray-300 tracking-[0.4em] uppercase">Est. 2026 &bull; Time Town Project</div>
     </div>
-
-    <script type="module">
+<script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, get, set, child, update, remove, onValue, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
@@ -241,12 +240,16 @@
         const db = getDatabase(app);
         
         const SUPER_ADMIN = "Jaokha";
-        let currentUser = localStorage.getItem('portalUser');
+        let currentUser = localStorage.getItem('portalUser') || null; 
         const thaiSort = (a, b) => a.localeCompare(b, 'th', { sensitivity: 'base' });
 
         async function saveLog(action, detail, location = "หน้าหลัก") {
             push(ref(db, 'activity_logs'), {
-                user: currentUser || 'Unknown', action, detail, location, timestamp: serverTimestamp()
+                user: currentUser || 'Unknown', 
+                action: action, 
+                detail: detail, 
+                location: location, 
+                timestamp: Date.now() 
             });
         }
 
@@ -273,8 +276,15 @@
                 userData.name = newName.trim();
                 await set(ref(db, `portal_users/${newName.trim()}`), userData);
                 await remove(ref(db, `portal_users/${oldName}`));
+                
+                if (currentUser === oldName) {
+                    currentUser = newName.trim();
+                    localStorage.setItem('portalUser', currentUser);
+                }
+
                 saveLog("ADMIN_EDIT_NAME", `${currentUser} changed ${oldName} to ${newName}`);
                 alert("เปลี่ยนชื่อสำเร็จ!");
+                location.reload();
             }
         };
 
@@ -291,75 +301,71 @@
             } else if (newPin) alert("PIN ต้องมี 4 หลัก");
         };
 
-        
-    // --- ฟังก์ชัน Render ตารางสมาชิก พร้อมระบบป้องกันการแก้ไขชื่อ/PIN ---
-async function renderUserTable(users) {
-    const tbody = document.getElementById('userTableBody');
-    if(!tbody || !users) return; 
-    tbody.innerHTML = "";
-    
-    const snap = await get(child(ref(db), `portal_users/${currentUser}`));
-    const myData = snap.val() || {};
-    
-    // เช็คสิทธิ์พื้นฐาน
-    const iCanDelete = (myData && myData.canDelete) || currentUser === SUPER_ADMIN;
-    const iCanManage = (myData && myData.isAdmin) || currentUser === SUPER_ADMIN;
+        async function renderUserTable(users) {
+            const tbody = document.getElementById('userTableBody');
+            if (!tbody || !users) return;
+            tbody.innerHTML = "";
 
-    const sortedNames = Object.keys(users).sort(thaiSort);
-    
-    sortedNames.forEach(name => {
-        const u = users[name];
-        const isJaokha = (name === SUPER_ADMIN);
-        const isMe = (name === currentUser); // เช็คว่าเป็นตัวเองหรือไม่
-        
-        // --- 1. การจัดการชื่อ (Username) ---
-        // เงื่อนไข: แก้ได้เฉพาะชื่อตัวเอง หรือ เป็น SUPER_ADMIN เท่านั้น
-        const canEditThisName = isMe || currentUser === SUPER_ADMIN;
-        const nameClickAction = canEditThisName ? `onclick="editUsername('${name}')"` : "";
-        const nameStyle = canEditThisName ? "cursor-pointer underline decoration-dotted" : "cursor-default";
+            const snap = await get(child(ref(db), `portal_users/${currentUser}`));
+            const myData = snap.val() || {};
 
-        // --- 2. การจัดการรหัส (PIN) ---
-        // เงื่อนไข: เห็น PIN และแก้ได้เฉพาะของตัวเอง หรือ เป็น SUPER_ADMIN เท่านั้น
-        const canSeePin = isMe || currentUser === SUPER_ADMIN;
-        const pinDisplay = canSeePin ? u.pin : "****";
-        const pinClickAction = canSeePin ? `onclick="editUserPin('${name}', '${u.pin}')"` : "";
-        const pinStyle = canSeePin ? "cursor-pointer underline decoration-dotted text-amber-600 font-bold" : "text-slate-400";
+            const iCanManage = (myData && myData.isAdmin) || currentUser === SUPER_ADMIN;
+            const iCanDelete = (myData && myData.canDelete) || currentUser === SUPER_ADMIN;
 
-        let nClass = "user-name status-none";
-        if (u.canEdit && u.canDelete) nClass = "user-name status-both";
-        else if (u.canEdit) nClass = "user-name status-edit";
-        else if (u.canDelete) nClass = "user-name status-delete";
+            const sortedNames = Object.keys(users).sort(thaiSort);
 
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>
-                <span class="${nClass} ${nameStyle}" ${nameClickAction}>${name}</span>
-            </td>
-            <td>
-                <span class="${pinStyle}" ${pinClickAction}>${pinDisplay}</span>
-            </td>
-            <td style="background: #fffdf5;">
-                <input type="checkbox" ${u.isAdmin ? 'checked' : ''} 
-                       ${(!iCanManage || isJaokha) ? 'disabled' : ''} 
-                       onchange="updateRank('${name}', this.checked)">
-            </td>
-            <td style="background: #f9fff0;">
-                <input type="checkbox" ${u.canEdit?'checked':''} 
-                       ${(!iCanManage || isJaokha) ? 'disabled' : ''} 
-                       onchange="updatePerm('${name}','canEdit',this.checked)">
-            </td>
-            <td style="background: #fff5f5;">
-                <input type="checkbox" ${u.canDelete?'checked':''} 
-                       ${(!iCanManage || isJaokha) ? 'disabled' : ''} 
-                       onchange="updatePerm('${name}','canDelete',this.checked)">
-            </td>
-            <td>
-                ${(!isJaokha && iCanDelete) ? `<button onclick="deleteUser('${name}')" class="text-red-400 font-bold text-[10px]">DEL</button>` : '-'}
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
+            sortedNames.forEach(name => {
+                const u = users[name];
+                const isJaokha = (name === SUPER_ADMIN); 
+                const isMe = (name === currentUser);    
+
+                const canEditThisName = isMe || currentUser === SUPER_ADMIN;
+                const nameClickAction = canEditThisName ? `onclick="editUsername('${name}')"` : "";
+                const nameStyle = canEditThisName ? "cursor-pointer underline decoration-dotted" : "cursor-default";
+
+                const canSeePin = isMe || currentUser === SUPER_ADMIN;
+                const pinDisplay = canSeePin ? u.pin : "****";
+                const pinClickAction = canSeePin ? `onclick="editUserPin('${name}', '${u.pin}')"` : "";
+                const pinStyle = canSeePin ? "cursor-pointer underline decoration-dotted text-amber-600 font-bold" : "text-slate-400";
+
+                let nClass = "user-name status-none";
+                if (u.canEdit && u.canDelete) nClass = "user-name status-both";
+                else if (u.canEdit) nClass = "user-name status-edit";
+                else if (u.canDelete) nClass = "user-name status-delete";
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>
+                        <span class="${nClass} ${nameStyle}" ${nameClickAction}>${name}</span>
+                    </td>
+                    <td>
+                        <span class="${pinStyle}" ${pinClickAction}>${pinDisplay}</span>
+                    </td>
+                    <td style="background: #fffdf5;">
+                        <input type="checkbox" ${u.isAdmin ? 'checked' : ''} 
+                               ${(!iCanManage || isJaokha) ? 'disabled' : ''} 
+                               onchange="updateRank('${name}', this.checked)">
+                    </td>
+                    <td style="background: #f9fff0;">
+                        <input type="checkbox" ${u.canEdit ? 'checked' : ''} 
+                               ${(!iCanManage || isJaokha) ? 'disabled' : ''} 
+                               onchange="updatePerm('${name}', 'canEdit', this.checked)">
+                    </td>
+                    <td style="background: #fff5f5;">
+                        <input type="checkbox" ${u.canDelete ? 'checked' : ''} 
+                               ${(!iCanManage || isJaokha) ? 'disabled' : ''} 
+                               onchange="updatePerm('${name}', 'canDelete', this.checked)">
+                    </td>
+                    <td>
+                        ${(iCanDelete && !isJaokha) ? 
+                            `<button onclick="deleteUser('${name}')" class="text-red-400 font-bold text-[10px]">DEL</button>` 
+                            : '-'}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
         window.updatePerm = async (n, f, v) => {
             const snap = await get(child(ref(db), `portal_users/${currentUser}`));
             const myData = snap.val() || {};
@@ -408,10 +414,14 @@ async function renderUserTable(users) {
         async function finishLogin(n, p, red) {
             const snap = await get(child(ref(db), `portal_users/${n}`));
             if(snap.exists() && snap.val().pin === p) {
-                localStorage.setItem('portalUser', n);
-                saveLog("LOGIN", `User ${n} logged in`);
+                localStorage.setItem('portalUser', n); 
+                currentUser = n; 
+                await saveLog("LOGIN", `User ${n} logged in`);
+                alert("เข้าสู่ระบบสำเร็จ!");
                 red ? location.href = red : location.reload();
-            } else alert("ชื่อหรือ PIN ไม่ถูกต้อง");
+            } else {
+                alert("ชื่อหรือ PIN ไม่ถูกต้อง");
+            }
         }
 
         async function finishRegister(n, p) {
@@ -429,7 +439,7 @@ async function renderUserTable(users) {
             document.querySelectorAll('.admin-content-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            b.classList.add('active');
+            if(b) b.classList.add('active');
         };
         window.toggleAdminTable = () => {
             const w = document.getElementById('adminTableWrapper');
@@ -438,8 +448,10 @@ async function renderUserTable(users) {
         window.checkAndGo = (u) => currentUser ? location.href=u : openAuth('login', u);
 
         if (currentUser) {
-            document.getElementById('logoutBtn').style.display = 'block';
-            document.getElementById('loginBtn').style.display = 'none';
+            const logoutBtn = document.getElementById('logoutBtn');
+            const loginBtn = document.getElementById('loginBtn');
+            if(logoutBtn) logoutBtn.style.display = 'block';
+            if(loginBtn) loginBtn.style.display = 'none';
             document.getElementById('welcomeMsg').innerText = `WELCOME: ${currentUser}`;
             get(child(ref(db), `portal_users/${currentUser}`)).then(snap => {
                 const u = snap.val();
@@ -459,28 +471,38 @@ async function renderUserTable(users) {
             document.getElementById('typeFam').className = t==='fam'?'type-btn active-fam':'type-btn inactive';
             document.getElementById('typeGang').className = t==='gang'?'type-btn active-gang':'type-btn inactive';
         };
-        async function loadGangs() {
-            const mySnap = await get(child(ref(db), `portal_users/${currentUser}`));
-            const myData = mySnap.val();
-            const iCanDelete = (myData && myData.canDelete) || currentUser === SUPER_ADMIN;
 
-            onValue(ref(db, 'gang_list'), (snap) => {
-                const display = document.getElementById('gangListDisplay'); if(!display) return;
-                display.innerHTML = ""; const gangs = snap.val();
+        async function loadGangs() {
+            onValue(ref(db, 'gang_list'), async (snap) => {
+                const display = document.getElementById('gangListDisplay');
+                if(!display) return;
+                const userSnap = await get(child(ref(db), `portal_users/${currentUser}`));
+                const uData = userSnap.val() || {};
+                const iCanDelete = uData.canDelete || currentUser === SUPER_ADMIN;
+
+                display.innerHTML = ""; 
+                const gangs = snap.val();
                 if(gangs) Object.entries(gangs).sort((a,b)=>thaiSort(a[1].name||a[1], b[1].name||b[1])).forEach(([k,v])=>{
-                    const name = v.name || v; const isFam = v.type==='fam';
-                    const div = document.createElement('div'); div.className = `gang-item ${isFam?'item-fam':'item-gang'}`;
-                    div.innerHTML = `<span>${name}</span>${iCanDelete ? `<button onclick="deleteGang('${k}','${name}')">✕</button>` : ''}`;
+                    const name = v.name || v; 
+                    const isFam = v.type==='fam';
+                    const div = document.createElement('div'); 
+                    div.className = `flex justify-between items-center p-3 rounded-lg border ${isFam?'bg-blue-50 border-blue-100 text-blue-700':'bg-amber-50 border-amber-100 text-amber-700'}`;
+                    div.innerHTML = `
+                        <span class="text-xs font-bold uppercase">${name}</span>
+                        ${iCanDelete ? `<button onclick="deleteGang('${k}','${name}')" class="text-xs opacity-50 hover:opacity-100">✕</button>` : ''}
+                    `;
                     display.appendChild(div);
                 });
             });
         }
+
         window.addGang = async () => {
             const snap = await get(child(ref(db), `portal_users/${currentUser}`));
             if (!snap.val()?.canEdit && currentUser !== SUPER_ADMIN) return alert("คุณไม่มียศสำหรับบันทึกข้อมูล");
             const i = document.getElementById('gangNameInput');
             if(i.value) { push(ref(db, 'gang_list'), {name: i.value, type: selectedGangType}); i.value=""; }
         };
+
         window.deleteGang = async (k, n) => {
             const snap = await get(child(ref(db), `portal_users/${currentUser}`));
             const u = snap.val();
@@ -488,6 +510,48 @@ async function renderUserTable(users) {
             if (!iCanDelete) return alert("คุณไม่มียศสำหรับลบข้อมูล");
             confirm(`ลบ ${n}?`) && remove(ref(db, `gang_list/${k}`));
         };
+
+       async function loadMedicines() {
+            onValue(ref(db, 'service_prices'), async (snap) => {
+                const display = document.getElementById('medicineListDisplay');
+                if(!display) return;
+                const userSnap = await get(child(ref(db), `portal_users/${currentUser}`));
+                const iCanDelete = (userSnap.val()?.canDelete) || currentUser === SUPER_ADMIN;
+
+                display.innerHTML = ""; 
+                const meds = snap.val();
+                if(meds) Object.entries(meds).forEach(([k,v])=>{
+                    const div = document.createElement('div'); 
+                    div.className = "bg-white p-4 rounded-xl border mb-3";
+                    div.innerHTML = `
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <span class="text-[10px] bg-slate-100 px-2 py-1 rounded text-slate-500 font-bold uppercase">${v.type}</span>
+                                <h4 class="text-sm font-bold mt-1">${v.name}</h4>
+                            </div>
+                            ${iCanDelete ? `<button onclick="deleteMedicine('${k}')" class="text-red-300 hover:text-red-500 text-xs">✕ ลบ</button>` : ''}
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="text-center p-2 bg-slate-50 rounded-lg">
+                                <div class="text-[9px] font-bold text-slate-400 uppercase">ประชาชน</div>
+                                <div class="text-xs font-bold" onclick="startInlineEdit(this, 'service_prices/${k}/prices', 'citizen')">${v.prices?.citizen || 0}</div>
+                                <div class="text-[8px] text-slate-400 mt-1">แพ็คละ: <span class="cursor-pointer" onclick="startInlineEdit(this, 'service_prices/${k}/packs', 'citizen')">${v.packs?.citizen || 0}</span></div>
+                            </div>
+                            <div class="text-center p-2 bg-blue-50 rounded-lg">
+                                <div class="text-[9px] font-bold text-blue-400 uppercase">แก๊ง</div>
+                                <div class="text-xs font-bold text-blue-600" onclick="startInlineEdit(this, 'service_prices/${k}/prices', 'gang')">${v.prices?.gang || 0}</div>
+                                <div class="text-[8px] text-blue-300 mt-1">แพ็คละ: <span class="cursor-pointer" onclick="startInlineEdit(this, 'service_prices/${k}/packs', 'gang')">${v.packs?.gang || 0}</span></div>
+                            </div>
+                            <div class="text-center p-2 bg-pink-50 rounded-lg">
+                                <div class="text-[9px] font-bold text-pink-400 uppercase">แฟม</div>
+                                <div class="text-xs font-bold text-pink-600" onclick="startInlineEdit(this, 'service_prices/${k}/prices', 'fam')">${v.prices?.fam || 0}</div>
+                                <div class="text-[8px] text-pink-300 mt-1">แพ็คละ: <span class="cursor-pointer" onclick="startInlineEdit(this, 'service_prices/${k}/packs', 'fam')">${v.packs?.fam || 0}</span></div>
+                            </div>
+                        </div>`;
+                    display.appendChild(div);
+                });
+            });
+        }
 
         window.saveMedicine = async () => {
             const snap = await get(child(ref(db), `portal_users/${currentUser}`));
@@ -512,6 +576,64 @@ async function renderUserTable(users) {
             document.getElementById('packCitizen').value = ""; document.getElementById('packGang').value = ""; document.getElementById('packFam').value = "";
         };
 
+        window.deleteMedicine = async (k) => {
+            const snap = await get(child(ref(db), `portal_users/${currentUser}`));
+            const u = snap.val();
+            const iCanDelete = (u && u.canDelete) || currentUser === SUPER_ADMIN;
+            if (!iCanDelete) return alert("คุณไม่มียศสำหรับลบข้อมูล");
+            confirm(`ลบรายการนี้?`) && remove(ref(db, `service_prices/${k}`));
+        };
+
+        async function loadMarketItems() {
+            onValue(ref(db, 'market_items'), async (snap) => {
+                const display = document.getElementById('marketListDisplay'); 
+                if(!display) return;
+                const userSnap = await get(child(ref(db), `portal_users/${currentUser}`));
+                const iCanDelete = (userSnap.val()?.canDelete) || currentUser === SUPER_ADMIN;
+
+                display.innerHTML = ""; 
+                const items = snap.val();
+                if(items) Object.entries(items).forEach(([k,v])=>{
+                    const div = document.createElement('div'); 
+                    div.className = `price-card fade-in ${v.category==='farm'?'card-farm':(v.category==='mine'?'card-mine':'')}`;
+                    div.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <div><div class="text-[9px] uppercase font-bold opacity-40">${v.category}</div><div class="font-bold text-sm">${v.name}</div></div>
+                            <div class="flex items-center gap-4">
+                                <div class="text-right">
+                                    <div class="price-label">ราคาเรท</div>
+                                    <div class="editable-value text-lg" onclick="startInlineEdit(this, 'market_items/${k}', 'rate')">${v.rate}</div>
+                                    <div class="text-[9px] text-slate-400 mt-1">แพ็คละ: <span class="cursor-pointer" onclick="startInlineEdit(this, 'market_items/${k}', 'pack')">${v.pack || 0}</span></div>
+                                </div>
+                                ${iCanDelete ? `<button onclick="deleteMarketItem('${k}')" class="text-red-300">✕</button>` : ''}
+                            </div>
+                        </div>
+                    `;
+                    display.appendChild(div);
+                });
+            });
+        }
+
+        window.saveMarketItem = async () => {
+            const snap = await get(child(ref(db), `portal_users/${currentUser}`));
+            if (!snap.val()?.canEdit && currentUser !== SUPER_ADMIN) return alert("คุณไม่มียศสำหรับบันทึกข้อมูล");
+            const name = document.getElementById('marketItemName').value;
+            const cat = document.getElementById('marketCategory').value;
+            const rate = document.getElementById('marketRate').value;
+            const pack = document.getElementById('marketPack').value;
+            if(!name || !rate) return alert("ระบุชื่อและราคา");
+            set(ref(db, `market_items/${name}`), { name, category: cat, rate: Number(rate), pack: Number(pack||0) });
+            document.getElementById('marketItemName').value = ""; document.getElementById('marketRate').value = ""; document.getElementById('marketPack').value = "";
+        };
+
+        window.deleteMarketItem = async (k) => {
+            const snap = await get(child(ref(db), `portal_users/${currentUser}`));
+            const u = snap.val();
+            const iCanDelete = (u && u.canDelete) || currentUser === SUPER_ADMIN;
+            if (!iCanDelete) return alert("คุณไม่มียศสำหรับลบข้อมูล");
+            confirm(`ลบ ${k}?`) && remove(ref(db, `market_items/${k}`));
+        };
+
         window.startInlineEdit = async (element, dbPath, fieldPath) => {
             const snap = await get(child(ref(db), `portal_users/${currentUser}`));
             if (!snap.val()?.canEdit && currentUser !== SUPER_ADMIN) return alert("คุณไม่มียศสำหรับแก้ไขข้อมูล");
@@ -533,99 +655,10 @@ async function renderUserTable(users) {
                 originalElement.innerText = newValue;
             };
             input.onblur = finishEdit;
-            input.onkeydown = (e) => { if (e.key === 'Enter') finishEdit(); if (e.key === 'Escape') { isFinished=true; input.replaceWith(originalElement); } };
-        };
-
-        async function loadMedicines() {
-            const mySnap = await get(child(ref(db), `portal_users/${currentUser}`));
-            const myData = mySnap.val();
-            const iCanDelete = (myData && myData.canDelete) || currentUser === SUPER_ADMIN;
-
-            onValue(ref(db, 'service_prices'), (snap) => {
-                const display = document.getElementById('medicineListDisplay'); if(!display) return;
-                display.innerHTML = ""; const meds = snap.val();
-                if(meds) Object.entries(meds).forEach(([k,v])=>{
-                    const div = document.createElement('div'); div.className = "price-card fade-in";
-                    div.innerHTML = `
-                        <div class="flex justify-between items-start mb-3">
-                            <div><span class="text-[10px] bg-slate-100 px-2 py-1 rounded text-slate-500 font-bold uppercase">${v.type}</span><h4 class="text-sm font-bold mt-1">${v.name}</h4></div>
-                            ${iCanDelete ? `<button onclick="deleteMedicine('${k}')" class="text-red-300 hover:text-red-500 text-xs">✕ ลบ</button>` : ''}
-                        </div>
-                        <div class="grid grid-cols-3 gap-2">
-                            <div class="text-center p-2 bg-slate-50 rounded-lg">
-                                <div class="price-label">ประชาชน</div>
-                                <div class="editable-value" onclick="startInlineEdit(this, 'service_prices/${k}/prices', 'citizen')">${v.prices?.citizen || 0}</div>
-                                <div class="text-[9px] text-slate-400 mt-1">แพ็คละ: <span class="cursor-pointer" onclick="startInlineEdit(this, 'service_prices/${k}/packs', 'citizen')">${v.packs?.citizen || 0}</span></div>
-                            </div>
-                            <div class="text-center p-2 bg-blue-50 rounded-lg">
-                                <div class="price-label">แก๊ง</div>
-                                <div class="editable-value text-blue-600" onclick="startInlineEdit(this, 'service_prices/${k}/prices', 'gang')">${v.prices?.gang || 0}</div>
-                                <div class="text-[9px] text-blue-300 mt-1">แพ็คละ: <span class="cursor-pointer" onclick="startInlineEdit(this, 'service_prices/${k}/packs', 'gang')">${v.packs?.gang || 0}</span></div>
-                            </div>
-                            <div class="text-center p-2 bg-pink-50 rounded-lg">
-                                <div class="price-label">แฟม</div>
-                                <div class="editable-value text-pink-600" onclick="startInlineEdit(this, 'service_prices/${k}/prices', 'fam')">${v.prices?.fam || 0}</div>
-                                <div class="text-[9px] text-pink-300 mt-1">แพ็คละ: <span class="cursor-pointer" onclick="startInlineEdit(this, 'service_prices/${k}/packs', 'fam')">${v.packs?.fam || 0}</span></div>
-                            </div>
-                        </div>
-                    `;
-                    display.appendChild(div);
-                });
-            });
-        }
-        window.deleteMedicine = async (k) => {
-            const snap = await get(child(ref(db), `portal_users/${currentUser}`));
-            const u = snap.val();
-            const iCanDelete = (u && u.canDelete) || currentUser === SUPER_ADMIN;
-            if (!iCanDelete) return alert("คุณไม่มียศสำหรับลบข้อมูล");
-            confirm(`ลบรายการนี้?`) && remove(ref(db, `service_prices/${k}`));
-        };
-
-        window.saveMarketItem = async () => {
-            const snap = await get(child(ref(db), `portal_users/${currentUser}`));
-            if (!snap.val()?.canEdit && currentUser !== SUPER_ADMIN) return alert("คุณไม่มียศสำหรับบันทึกข้อมูล");
-            const name = document.getElementById('marketItemName').value;
-            const cat = document.getElementById('marketCategory').value;
-            const rate = document.getElementById('marketRate').value;
-            const pack = document.getElementById('marketPack').value;
-            if(!name || !rate) return alert("ระบุชื่อและราคา");
-            set(ref(db, `market_items/${name}`), { name, category: cat, rate: Number(rate), pack: Number(pack||0) });
-            document.getElementById('marketItemName').value = ""; document.getElementById('marketRate').value = ""; document.getElementById('marketPack').value = "";
-        };
-        async function loadMarketItems() {
-            const mySnap = await get(child(ref(db), `portal_users/${currentUser}`));
-            const myData = mySnap.val();
-            const iCanDelete = (myData && myData.canDelete) || currentUser === SUPER_ADMIN;
-
-            onValue(ref(db, 'market_items'), (snap) => {
-                const display = document.getElementById('marketListDisplay'); if(!display) return;
-                display.innerHTML = ""; const items = snap.val();
-                if(items) Object.entries(items).forEach(([k,v])=>{
-                    const div = document.createElement('div'); 
-                    div.className = `price-card fade-in ${v.category==='farm'?'card-farm':(v.category==='mine'?'card-mine':'')}`;
-                    div.innerHTML = `
-                        <div class="flex justify-between items-center">
-                            <div><div class="text-[9px] uppercase font-bold opacity-40">${v.category}</div><div class="font-bold text-sm">${v.name}</div></div>
-                            <div class="flex items-center gap-4">
-                                <div class="text-right">
-                                    <div class="price-label">ราคาเรท</div>
-                                    <div class="editable-value text-lg" onclick="startInlineEdit(this, 'market_items/${k}', 'rate')">${v.rate}</div>
-                                    <div class="text-[9px] text-slate-400 mt-1">แพ็คละ: <span class="cursor-pointer" onclick="startInlineEdit(this, 'market_items/${k}', 'pack')">${v.pack || 0}</span></div>
-                                </div>
-                                ${iCanDelete ? `<button onclick="deleteMarketItem('${k}')" class="text-red-300">✕</button>` : ''}
-                            </div>
-                        </div>
-                    `;
-                    display.appendChild(div);
-                });
-            });
-        }
-        window.deleteMarketItem = async (k) => {
-            const snap = await get(child(ref(db), `portal_users/${currentUser}`));
-            const u = snap.val();
-            const iCanDelete = (u && u.canDelete) || currentUser === SUPER_ADMIN;
-            if (!iCanDelete) return alert("คุณไม่มียศสำหรับลบข้อมูล");
-            confirm(`ลบ ${k}?`) && remove(ref(db, `market_items/${k}`));
+            input.onkeydown = (e) => { 
+                if (e.key === 'Enter') finishEdit(); 
+                if (e.key === 'Escape') { isFinished=true; input.replaceWith(originalElement); } 
+            };
         };
 
         window.addRule = async () => {
@@ -657,13 +690,12 @@ async function renderUserTable(users) {
         };
 
         async function loadRules() {
-            const mySnap = await get(child(ref(db), `portal_users/${currentUser}`));
-            const myData = mySnap.val();
-            const iCanDelete = (myData && myData.canDelete) || currentUser === SUPER_ADMIN;
-
-            onValue(ref(db, 'rule_list'), (snap) => {
+            onValue(ref(db, 'rule_list'), async (snap) => {
                 const display = document.getElementById('ruleListDisplay'); 
                 if(!display) return;
+                const userSnap = await get(child(ref(db), `portal_users/${currentUser}`));
+                const iCanDelete = (userSnap.val()?.canDelete) || currentUser === SUPER_ADMIN;
+
                 display.innerHTML = ""; 
                 const rules = snap.val();
                 
@@ -699,5 +731,3 @@ async function renderUserTable(users) {
         };
 
     </script>
-</body>
-</html>
