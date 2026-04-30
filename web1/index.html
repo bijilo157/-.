@@ -325,28 +325,28 @@ const logRef = ref(db, 'announcement_logs');
 const gangListRef = ref(db, 'gang_list');
 const ruleListRef = ref(db, 'rule_list');
 
-// --- 🔒 เพิ่มระบบเช็คสิทธิ์ 🔒 ---
+const SUPER_ADMIN = "Jaokha";
+let currentUser = localStorage.getItem('portalUser') || null;
+let userData = {}; // เก็บข้อมูลสิทธิ์ผู้ใช้แบบ Real-time
+
+// --- 🔒 ระบบเช็คสิทธิ์แบบ Real-time 🔒 ---
+if (currentUser) {
+    onValue(ref(db, `portal_users/${currentUser}`), (snap) => {
+        userData = snap.val() || {};
+    });
+}
+
 async function checkPermission() {
-    const userName = localStorage.getItem('portalUser');
-    if (!userName) {
+    if (!currentUser) {
         alert("❌ กรุณาเข้าสู่ระบบก่อนทำรายการ");
         return false;
     }
-    const dbRef = ref(db);
-    try {
-        const snapshot = await get(child(dbRef, `portal_users/${userName}`));
-        if (snapshot.exists()) {
-            const userData = snapshot.val();
-            if (userData.isAdmin || userData.canEdit) {
-                return true;
-            }
-        }
-        alert("⚠️ คุณไม่มียศหรือสิทธิ์ในการดำเนินการ (ติดต่อ Admin)");
-        return false;
-    } catch (error) {
-        console.error(error);
-        return false;
+    // เช็คจาก userData ที่ดึงมา หรือเป็น Super Admin
+    if (userData.isAdmin || userData.canEdit || currentUser === SUPER_ADMIN) {
+        return true;
     }
+    alert("⚠️ คุณไม่มียศหรือสิทธิ์ในการดำเนินการ (ติดต่อ Admin)");
+    return false;
 }
 
 function customSort(a, b) {
@@ -355,7 +355,7 @@ function customSort(a, b) {
 
 // --- ฟังก์ชันดึงชื่ออัตโนมัติ ---
 function getAutoUser() {
-    return localStorage.getItem('portalUser') || "ไม่ระบุชื่อ";
+    return currentUser || "ไม่ระบุชื่อ";
 }
 
 let allGangsData = {};
@@ -519,7 +519,6 @@ function date(){
 // --- 3. Firebase Data Handling ---
 
 window.saveHistory = async function(text){
-    // ระบบบันทึกจะเช็คผ่าน copyText แล้ว แต่ใส่กันไว้อีกชั้น
     const user = getAutoUser(); 
     push(logRef, {
         text: text,
@@ -534,6 +533,9 @@ onValue(logRef, (snapshot) => {
     box.innerHTML = "";
     const data = snapshot.val();
     if(data){
+        // เช็คสิทธิ์ลบป้ายประกาศแบบ Real-time
+        const iCanDelete = userData.canDelete || currentUser === SUPER_ADMIN;
+        
         Object.keys(data).reverse().forEach(key => {
             const item = data[key];
             let div = document.createElement("div");
@@ -544,7 +546,7 @@ onValue(logRef, (snapshot) => {
                     <span class="history-user">👤 ${item.user || 'ไม่ระบุ'}</span>
                 </div>
                 <div class="history-text">${item.text}</div>
-                <button class="delete-log-btn" onclick="deleteLog('${key}')">🗑 ลบ</button>
+                ${iCanDelete ? `<button class="delete-log-btn" onclick="deleteLog('${key}')">🗑 ลบ</button>` : ''}
             `;
             box.appendChild(div);
         });
@@ -552,9 +554,13 @@ onValue(logRef, (snapshot) => {
 });
 
 window.deleteLog = async function(key){
-    if(!(await checkPermission())) return; // 🔒 เช็คสิทธิ์ก่อนลบ
-    if(confirm("ยืนยันการลบรายการนี้?")){
-        remove(ref(db, `announcement_logs/${key}`));
+    // ระบบเช็คสิทธิ์ซ้ำก่อนลบจริง
+    if (userData.canDelete || currentUser === SUPER_ADMIN) {
+        if(confirm("ยืนยันการลบรายการนี้?")){
+            remove(ref(db, `announcement_logs/${key}`));
+        }
+    } else {
+        alert("⚠️ คุณไม่มียศสำหรับลบข้อมูล");
     }
 }
 
