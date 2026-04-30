@@ -236,12 +236,26 @@
             appId: "1:154198162358:web:f16c1ffd840ceaa8845f17"
         };
 
-        const app = initializeApp(firebaseConfig);
+       const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         
         const SUPER_ADMIN = "Jaokha";
         let currentUser = localStorage.getItem('portalUser') || null; 
         const thaiSort = (a, b) => a.localeCompare(b, 'th', { sensitivity: 'base' });
+
+        // --- เพิ่มตรงนี้ครับ ---
+        let userData = {}; 
+        if (currentUser) {
+            // ดึงข้อมูลสิทธิ์แบบ Real-time จาก Database
+            onValue(ref(db, `portal_users/${currentUser}`), (snap) => {
+                userData = snap.val() || {};
+                // ถ้ามีฟังก์ชันที่ต้องอัปเดต UI ตามสิทธิ์ เช่น ปุ่มลบ หรือ ปุ่มปิดยอด
+                // สามารถสั่งให้ทำงานใหม่ตรงนี้ได้เลย (เช่น checkLockStatus() หรือ renderHistory())
+                if (typeof checkLockStatus === "function") checkLockStatus();
+                if (typeof renderHistory === "function") renderHistory();
+            });
+        }
+        // ------------------
 
         async function saveLog(action, detail, location = "หน้าหลัก") {
             push(ref(db, 'activity_logs'), {
