@@ -287,8 +287,8 @@
             if(!tbody || !users) return; tbody.innerHTML = "";
             
             const snap = await get(child(ref(db), `portal_users/${currentUser}`));
-            const myPerms = snap.val() || {};
-            const iCanDelete = myPerms.canDelete || currentUser === SUPER_ADMIN;
+            const myData = snap.val() || {};
+            const iCanDelete = (myData && myData.canDelete) || currentUser === SUPER_ADMIN;
             const iCanManage = currentUser === SUPER_ADMIN;
 
             const sortedNames = Object.keys(users).sort(thaiSort);
@@ -336,7 +336,8 @@
         window.deleteUser = async (n) => {
             const snap = await get(child(ref(db), `portal_users/${currentUser}`));
             const u = snap.val();
-            if (u && (u.canDelete || currentUser === SUPER_ADMIN)) {
+            const iCanDelete = (u && u.canDelete) || currentUser === SUPER_ADMIN;
+            if (iCanDelete) {
                 if(confirm(`ลบ ${n}?`)) {
                     saveLog("DELETE_USER", `Deleted user ${n}`);
                     remove(ref(db, `portal_users/${n}`));
@@ -422,14 +423,18 @@
             document.getElementById('typeFam').className = t==='fam'?'type-btn active-fam':'type-btn inactive';
             document.getElementById('typeGang').className = t==='gang'?'type-btn active-gang':'type-btn inactive';
         };
-        function loadGangs() {
+        async function loadGangs() {
+            const mySnap = await get(child(ref(db), `portal_users/${currentUser}`));
+            const myData = mySnap.val();
+            const iCanDelete = (myData && myData.canDelete) || currentUser === SUPER_ADMIN;
+
             onValue(ref(db, 'gang_list'), (snap) => {
                 const display = document.getElementById('gangListDisplay'); if(!display) return;
                 display.innerHTML = ""; const gangs = snap.val();
                 if(gangs) Object.entries(gangs).sort((a,b)=>thaiSort(a[1].name||a[1], b[1].name||b[1])).forEach(([k,v])=>{
                     const name = v.name || v; const isFam = v.type==='fam';
                     const div = document.createElement('div'); div.className = `gang-item ${isFam?'item-fam':'item-gang'}`;
-                    div.innerHTML = `<span>${name}</span><button onclick="deleteGang('${k}','${name}')">✕</button>`;
+                    div.innerHTML = `<span>${name}</span>${iCanDelete ? `<button onclick="deleteGang('${k}','${name}')">✕</button>` : ''}`;
                     display.appendChild(div);
                 });
             });
@@ -442,7 +447,9 @@
         };
         window.deleteGang = async (k, n) => {
             const snap = await get(child(ref(db), `portal_users/${currentUser}`));
-            if (!snap.val()?.canDelete && currentUser !== SUPER_ADMIN) return alert("คุณไม่มียศสำหรับลบข้อมูล");
+            const u = snap.val();
+            const iCanDelete = (u && u.canDelete) || currentUser === SUPER_ADMIN;
+            if (!iCanDelete) return alert("คุณไม่มียศสำหรับลบข้อมูล");
             confirm(`ลบ ${n}?`) && remove(ref(db, `gang_list/${k}`));
         };
 
@@ -493,7 +500,11 @@
             input.onkeydown = (e) => { if (e.key === 'Enter') finishEdit(); if (e.key === 'Escape') { isFinished=true; input.replaceWith(originalElement); } };
         };
 
-        function loadMedicines() {
+        async function loadMedicines() {
+            const mySnap = await get(child(ref(db), `portal_users/${currentUser}`));
+            const myData = mySnap.val();
+            const iCanDelete = (myData && myData.canDelete) || currentUser === SUPER_ADMIN;
+
             onValue(ref(db, 'service_prices'), (snap) => {
                 const display = document.getElementById('medicineListDisplay'); if(!display) return;
                 display.innerHTML = ""; const meds = snap.val();
@@ -502,7 +513,7 @@
                     div.innerHTML = `
                         <div class="flex justify-between items-start mb-3">
                             <div><span class="text-[10px] bg-slate-100 px-2 py-1 rounded text-slate-500 font-bold uppercase">${v.type}</span><h4 class="text-sm font-bold mt-1">${v.name}</h4></div>
-                            <button onclick="deleteMedicine('${k}')" class="text-red-300 hover:text-red-500 text-xs">✕ ลบ</button>
+                            ${iCanDelete ? `<button onclick="deleteMedicine('${k}')" class="text-red-300 hover:text-red-500 text-xs">✕ ลบ</button>` : ''}
                         </div>
                         <div class="grid grid-cols-3 gap-2">
                             <div class="text-center p-2 bg-slate-50 rounded-lg">
@@ -528,7 +539,9 @@
         }
         window.deleteMedicine = async (k) => {
             const snap = await get(child(ref(db), `portal_users/${currentUser}`));
-            if (!snap.val()?.canDelete && currentUser !== SUPER_ADMIN) return alert("คุณไม่มียศสำหรับลบข้อมูล");
+            const u = snap.val();
+            const iCanDelete = (u && u.canDelete) || currentUser === SUPER_ADMIN;
+            if (!iCanDelete) return alert("คุณไม่มียศสำหรับลบข้อมูล");
             confirm(`ลบรายการนี้?`) && remove(ref(db, `service_prices/${k}`));
         };
 
@@ -543,7 +556,11 @@
             set(ref(db, `market_items/${name}`), { name, category: cat, rate: Number(rate), pack: Number(pack||0) });
             document.getElementById('marketItemName').value = ""; document.getElementById('marketRate').value = ""; document.getElementById('marketPack').value = "";
         };
-        function loadMarketItems() {
+        async function loadMarketItems() {
+            const mySnap = await get(child(ref(db), `portal_users/${currentUser}`));
+            const myData = mySnap.val();
+            const iCanDelete = (myData && myData.canDelete) || currentUser === SUPER_ADMIN;
+
             onValue(ref(db, 'market_items'), (snap) => {
                 const display = document.getElementById('marketListDisplay'); if(!display) return;
                 display.innerHTML = ""; const items = snap.val();
@@ -557,8 +574,9 @@
                                 <div class="text-right">
                                     <div class="price-label">ราคาเรท</div>
                                     <div class="editable-value text-lg" onclick="startInlineEdit(this, 'market_items/${k}', 'rate')">${v.rate}</div>
+                                    <div class="text-[9px] text-slate-400 mt-1">แพ็คละ: <span class="cursor-pointer" onclick="startInlineEdit(this, 'market_items/${k}', 'pack')">${v.pack || 0}</span></div>
                                 </div>
-                                <button onclick="deleteMarketItem('${k}')" class="text-red-300">✕</button>
+                                ${iCanDelete ? `<button onclick="deleteMarketItem('${k}')" class="text-red-300">✕</button>` : ''}
                             </div>
                         </div>
                     `;
@@ -568,38 +586,81 @@
         }
         window.deleteMarketItem = async (k) => {
             const snap = await get(child(ref(db), `portal_users/${currentUser}`));
-            if (!snap.val()?.canDelete && currentUser !== SUPER_ADMIN) return alert("คุณไม่มียศสำหรับลบข้อมูล");
+            const u = snap.val();
+            const iCanDelete = (u && u.canDelete) || currentUser === SUPER_ADMIN;
+            if (!iCanDelete) return alert("คุณไม่มียศสำหรับลบข้อมูล");
             confirm(`ลบ ${k}?`) && remove(ref(db, `market_items/${k}`));
         };
 
+        // --- ส่วนจัดการกฎ เชื่อมกับ rule_list (Web 1) ---
         window.addRule = async () => {
             const snap = await get(child(ref(db), `portal_users/${currentUser}`));
             if (!snap.val()?.canEdit && currentUser !== SUPER_ADMIN) return alert("คุณไม่มียศสำหรับบันทึกข้อมูล");
+            
             const no = document.getElementById('ruleNo').value;
             const det = document.getElementById('ruleDetail').value;
             const fine = document.getElementById('ruleFine').value;
             const cat = document.getElementById('ruleCategory').value;
-            if(!no || !det) return alert("กรอกข้อมูลกฎ");
-            set(ref(db, `law_rules/${no}`), { no: Number(no), detail: det, fine: Number(fine||0), category: cat });
-            document.getElementById('ruleNo').value=""; document.getElementById('ruleDetail').value=""; document.getElementById('ruleFine').value="";
+
+            if(!no || !det) return alert("กรอกข้อมูลกฎให้ครบถ้วน");
+
+            const ruleData = {
+                no: Number(no),
+                detail: det,
+                fine: Number(fine || 0),
+                category: cat,
+                selected: true
+            };
+
+            const newRuleRef = push(ref(db, 'rule_list'));
+            await set(newRuleRef, ruleData);
+            
+            document.getElementById('ruleNo').value=""; 
+            document.getElementById('ruleDetail').value=""; 
+            document.getElementById('ruleFine').value="";
+            alert("บันทึกกฎข้อที่ " + no + " เรียบร้อยแล้ว!");
         };
-        function loadRules() {
-            onValue(ref(db, 'law_rules'), (snap) => {
-                const display = document.getElementById('ruleListDisplay'); if(!display) return;
-                display.innerHTML = ""; const rules = snap.val();
-                if(rules) Object.values(rules).sort((a,b)=>a.no-b.no).forEach(r => {
-                    const div = document.createElement('div'); div.className = "rule-item";
-                    div.innerHTML = `<div><span class="font-bold text-blue-500 mr-2">ข้อ ${r.no}</span> <span class="text-slate-600">${r.detail}</span></div>
-                                     <div class="flex items-center gap-3"><span class="text-xs font-bold text-amber-600">${r.fine.toLocaleString()}</span>
-                                     <button onclick="deleteRule('${r.no}')" class="text-red-300">✕</button></div>`;
-                    display.appendChild(div);
-                });
+
+        async function loadRules() {
+            const mySnap = await get(child(ref(db), `portal_users/${currentUser}`));
+            const myData = mySnap.val();
+            const iCanDelete = (myData && myData.canDelete) || currentUser === SUPER_ADMIN;
+
+            onValue(ref(db, 'rule_list'), (snap) => {
+                const display = document.getElementById('ruleListDisplay'); 
+                if(!display) return;
+                display.innerHTML = ""; 
+                const rules = snap.val();
+                
+                if(rules) {
+                    const sortedRules = Object.entries(rules).sort((a, b) => a[1].no - b[1].no);
+                    sortedRules.forEach(([key, r]) => {
+                        const div = document.createElement('div'); 
+                        div.className = "rule-item";
+                        div.innerHTML = `
+                            <div>
+                                <span class="font-bold text-blue-500 mr-2">ข้อ ${r.no}</span> 
+                                <span class="text-slate-600">${r.detail}</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs font-bold text-amber-600">${(r.fine || 0).toLocaleString()}</span>
+                                ${iCanDelete ? `<button onclick="deleteRule('${key}', ${r.no})" class="text-red-300 hover:text-red-500">✕</button>` : ''}
+                            </div>`;
+                        display.appendChild(div);
+                    });
+                }
             });
         }
-        window.deleteRule = async (n) => {
+
+        window.deleteRule = async (key, ruleNo) => {
             const snap = await get(child(ref(db), `portal_users/${currentUser}`));
-            if (!snap.val()?.canDelete && currentUser !== SUPER_ADMIN) return alert("คุณไม่มียศสำหรับลบข้อมูล");
-            confirm(`ลบข้อ ${n}?`) && remove(ref(db, `law_rules/${n}`));
+            const u = snap.val();
+            const iCanDelete = (u && u.canDelete) || currentUser === SUPER_ADMIN;
+            if (!iCanDelete) return alert("คุณไม่มียศสำหรับลบข้อมูล");
+            if(confirm(`ยืนยันการลบข้อกฎหมายข้อที่ ${ruleNo}?`)) {
+                await remove(ref(db, `rule_list/${key}`));
+                saveLog("DELETE_RULE", `Deleted rule number ${ruleNo}`);
+            }
         };
 
     </script>
