@@ -156,23 +156,31 @@
     const salesRef = ref(db, 'sales_data'), gangRef = ref(db, 'gang_list'), priceRef = ref(db, 'service_prices'), usersRef = ref(db, 'portal_users'), marketRef = ref(db, 'market_items'), lockRef = ref(db, 'closed_days');
 
     let sales = [], closedDays = {}, gangs = [], priceList = {}, currentSubValue = "";
+    
+    // --- 🔒 ระบบเช็คสิทธิ์แบบ Real-time 🔒 ---
+    const SUPER_ADMIN = "Jaokha";
+    let currentUser = localStorage.getItem('portalUser') || null;
+    let userData = {}; // เก็บข้อมูลสิทธิ์ผู้ใช้แบบ Real-time
 
-    // --- 🔒 ระบบเช็คสิทธิ์ (Permission Check) 🔒 ---
+    if (currentUser) {
+        onValue(ref(db, `portal_users/${currentUser}`), (snap) => {
+            userData = snap.val() || {};
+            checkLockStatus(); // รีเฟรชปุ่มล็อคเมื่อสิทธิ์เปลี่ยน
+            renderHistory();   // รีเฟรชปุ่มลบเมื่อสิทธิ์เปลี่ยน
+        });
+    }
+
     async function checkPermission() {
-        const userName = localStorage.getItem('portalUser');
-        if (!userName) {
+        if (!currentUser) {
             alert("❌ กรุณาเข้าสู่ระบบก่อนทำรายการ");
             return false;
         }
-        try {
-            const snapshot = await get(child(ref(db), `portal_users/${userName}`));
-            if (snapshot.exists()) {
-                const userData = snapshot.val();
-                if (userData.isAdmin || userData.canEdit) return true;
-            }
-            alert("⚠️ คุณไม่มียศหรือสิทธิ์ในการดำเนินการ (ติดต่อ Admin)");
-            return false;
-        } catch (error) { return false; }
+        // เช็คจาก userData ที่ดึงมา Real-time หรือเป็น Super Admin
+        if (userData.isAdmin || userData.canEdit || currentUser === SUPER_ADMIN) {
+            return true;
+        }
+        alert("⚠️ คุณไม่มียศหรือสิทธิ์ในการดำเนินการ (ติดต่อ Admin)");
+        return false;
     }
 
     onValue(priceRef, (snap) => { priceList = snap.val() || {}; });
@@ -241,7 +249,7 @@
     };
 
     window.saveData = async () => {
-        if(!(await checkPermission())) return; // 🔒 เช็คสิทธิ์
+        if(!(await checkPermission())) return; 
         const date = document.getElementById('recordDate').value;
         if(closedDays[date]) return;
         const mainCat = document.getElementById('mainCategory').value, type = (mainCat === "ยาแก้") ? currentSubValue : mainCat;
@@ -265,7 +273,6 @@
         if(users) Object.entries(users).filter(([n, d]) => d.canEdit === true).sort((a,b)=>a[0].localeCompare(b[0],'th')).forEach(([n]) => {
             let opt = document.createElement('option'); opt.value = n; opt.text = n; sel.add(opt);
         });
-        const currentUser = localStorage.getItem('portalUser');
         if(currentUser) document.getElementById('displayUserName').innerText = `👤 ${currentUser}`;
     });
 
@@ -315,18 +322,31 @@
     };
     window.renderHistory = () => {
         const d = document.getElementById('histDate').value, isL = closedDays[d] === true; let h = "", c = 1;
-        sales.filter(s => s.date === d).forEach(s => { const bS = isL ? 'style="opacity:0.5; cursor:not-allowed; border-color:gray; color:gray;"' : ''; h += `<tr><td>${c++}</td><td>${s.type}</td><td>${s.buyer}</td><td>${s.qty.toLocaleString()}</td><td style="color:var(--primary)">${s.total.toLocaleString()}</td><td>${s.seller}</td><td><button class="btn-del" ${bS} onclick="delById('${s.firebaseKey}', '${s.date}')">ลบ</button></td></tr>`; });
+        // เช็คสิทธิ์ลบป้ายประกาศแบบ Real-time
+        const iCanDelete = userData.canDelete || currentUser === SUPER_ADMIN;
+
+        sales.filter(s => s.date === d).forEach(s => { 
+            const bS = (isL || !iCanDelete) ? 'style="opacity:0.5; cursor:not-allowed; border-color:gray; color:gray;"' : ''; 
+            h += `<tr><td>${c++}</td><td>${s.type}</td><td>${s.buyer}</td><td>${s.qty.toLocaleString()}</td><td style="color:var(--primary)">${s.total.toLocaleString()}</td><td>${s.seller}</td><td><button class="btn-del" ${bS} onclick="delById('${s.firebaseKey}', '${s.date}')">ลบ</button></td></tr>`; 
+        });
         document.getElementById('histBody').innerHTML = h || "<tr><td colspan='7'>ไม่มีข้อมูล</td></tr>";
     };
     window.delById = async (k, rD) => { 
-        if(!(await checkPermission())) return; // 🔒 เช็คสิทธิ์ก่อนลบ
+        if(!(await checkPermission())) return;
+        if(!userData.canDelete && currentUser !== SUPER_ADMIN) return alert("⚠️ คุณไม่มียศสำหรับลบข้อมูล");
         if(closedDays[rD]) return alert("🔒 ปิดยอดแล้ว"); 
         if(confirm("ลบรายการนี้?")) remove(ref(db, `sales_data/${k}`)); 
     };
     window.checkLockStatus = () => {
-        const d = document.getElementById('recordDate').value, isL = closedDays[d] === true, cU = document.getElementById('displayUserName').innerText.replace('👤 ', '').trim();
+        const d = document.getElementById('recordDate').value, isL = closedDays[d] === true;
         document.getElementById('btnSave').style.display = isL ? 'none' : 'block'; document.getElementById('lockMsg').style.display = isL ? 'block' : 'none';
-        const aC = document.getElementById('adminLockControl'); if(aC) { if(cU === "Jaokha") { aC.style.display = "block"; aC.innerHTML = `<button class="${isL?'btn-unlock':'btn-lock'}" onclick="toggleLock('${d}', ${!isL})">${isL?'🔓 เปิดงาน':'🔒 ปิดงาน'}</button>`; } else aC.style.display = "none"; }
+        const aC = document.getElementById('adminLockControl'); 
+        if(aC) { 
+            // เช็คสิทธิ์ปิดงาน: ต้องเป็น Super Admin หรือมี isAdmin
+            if(currentUser === SUPER_ADMIN || userData.isAdmin) { 
+                aC.style.display = "block"; aC.innerHTML = `<button class="${isL?'btn-unlock':'btn-lock'}" onclick="toggleLock('${d}', ${!isL})">${isL?'🔓 เปิดงาน':'🔒 ปิดงาน'}</button>`; 
+            } else aC.style.display = "none"; 
+        }
     };
     window.toggleLock = (d, s) => set(ref(db, `closed_days/${d}`), s);
     window.syncDate = (v) => { document.getElementById('recordDate').value=v; document.getElementById('dashDate').value=v; document.getElementById('histDate').value=v; checkLockStatus(); renderTotal(); renderHistory(); };
