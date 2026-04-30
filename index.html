@@ -291,51 +291,75 @@
             } else if (newPin) alert("PIN ต้องมี 4 หลัก");
         };
 
-        async function renderUserTable(users) {
-            const tbody = document.getElementById('userTableBody');
-            if(!tbody || !users) return; tbody.innerHTML = "";
-            
-            const snap = await get(child(ref(db), `portal_users/${currentUser}`));
-            const myData = snap.val() || {};
-            const iCanDelete = (myData && myData.canDelete) || currentUser === SUPER_ADMIN;
-            const iCanManage = (myData && myData.isAdmin) || currentUser === SUPER_ADMIN;
+        
+    // --- ฟังก์ชัน Render ตารางสมาชิก พร้อมระบบป้องกันการแก้ไขชื่อ/PIN ---
+async function renderUserTable(users) {
+    const tbody = document.getElementById('userTableBody');
+    if(!tbody || !users) return; 
+    tbody.innerHTML = "";
+    
+    const snap = await get(child(ref(db), `portal_users/${currentUser}`));
+    const myData = snap.val() || {};
+    
+    // เช็คสิทธิ์พื้นฐาน
+    const iCanDelete = (myData && myData.canDelete) || currentUser === SUPER_ADMIN;
+    const iCanManage = (myData && myData.isAdmin) || currentUser === SUPER_ADMIN;
 
-            const sortedNames = Object.keys(users).sort(thaiSort);
-            
-            sortedNames.forEach(name => {
-                const u = users[name];
-                const isJaokha = (name === SUPER_ADMIN);
-                
-                let nClass = "user-name status-none";
-                if (u.canEdit && u.canDelete) nClass = "user-name status-both";
-                else if (u.canEdit) nClass = "user-name status-edit";
-                else if (u.canDelete) nClass = "user-name status-delete";
+    const sortedNames = Object.keys(users).sort(thaiSort);
+    
+    sortedNames.forEach(name => {
+        const u = users[name];
+        const isJaokha = (name === SUPER_ADMIN);
+        const isMe = (name === currentUser); // เช็คว่าเป็นตัวเองหรือไม่
+        
+        // --- 1. การจัดการชื่อ (Username) ---
+        // เงื่อนไข: แก้ได้เฉพาะชื่อตัวเอง หรือ เป็น SUPER_ADMIN เท่านั้น
+        const canEditThisName = isMe || currentUser === SUPER_ADMIN;
+        const nameClickAction = canEditThisName ? `onclick="editUsername('${name}')"` : "";
+        const nameStyle = canEditThisName ? "cursor-pointer underline decoration-dotted" : "cursor-default";
 
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>
-                        <span class="${nClass} ${iCanManage?'cursor-pointer underline decoration-dotted':''}" 
-                              onclick="editUsername('${name}')">${name}</span>
-                    </td>
-                    <td>
-                        <span class="${(currentUser === SUPER_ADMIN)?'cursor-pointer underline decoration-dotted text-amber-600 font-bold':''}" 
-                              onclick="editUserPin('${name}', '${u.pin}')">
-                              ${(currentUser === SUPER_ADMIN) ? u.pin : '****'}
-                        </span>
-                    </td>
-                    <td>
-                        <input type="checkbox" ${u.isAdmin ? 'checked' : ''} 
-                               ${(!iCanManage || isJaokha) ? 'disabled' : ''} 
-                               onchange="updateRank('${name}', this.checked)">
-                    </td>
-                    <td><input type="checkbox" ${u.canEdit?'checked':''} ${!iCanManage?'disabled':''} onchange="updatePerm('${name}','canEdit',this.checked)"></td>
-                    <td><input type="checkbox" ${u.canDelete?'checked':''} ${!iCanManage?'disabled':''} onchange="updatePerm('${name}','canDelete',this.checked)"></td>
-                    <td>${(!isJaokha && iCanDelete) ? `<button onclick="deleteUser('${name}')" class="text-red-400 font-bold text-[10px]">DEL</button>` : '-'}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
+        // --- 2. การจัดการรหัส (PIN) ---
+        // เงื่อนไข: เห็น PIN และแก้ได้เฉพาะของตัวเอง หรือ เป็น SUPER_ADMIN เท่านั้น
+        const canSeePin = isMe || currentUser === SUPER_ADMIN;
+        const pinDisplay = canSeePin ? u.pin : "****";
+        const pinClickAction = canSeePin ? `onclick="editUserPin('${name}', '${u.pin}')"` : "";
+        const pinStyle = canSeePin ? "cursor-pointer underline decoration-dotted text-amber-600 font-bold" : "text-slate-400";
 
+        let nClass = "user-name status-none";
+        if (u.canEdit && u.canDelete) nClass = "user-name status-both";
+        else if (u.canEdit) nClass = "user-name status-edit";
+        else if (u.canDelete) nClass = "user-name status-delete";
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>
+                <span class="${nClass} ${nameStyle}" ${nameClickAction}>${name}</span>
+            </td>
+            <td>
+                <span class="${pinStyle}" ${pinClickAction}>${pinDisplay}</span>
+            </td>
+            <td style="background: #fffdf5;">
+                <input type="checkbox" ${u.isAdmin ? 'checked' : ''} 
+                       ${(!iCanManage || isJaokha) ? 'disabled' : ''} 
+                       onchange="updateRank('${name}', this.checked)">
+            </td>
+            <td style="background: #f9fff0;">
+                <input type="checkbox" ${u.canEdit?'checked':''} 
+                       ${(!iCanManage || isJaokha) ? 'disabled' : ''} 
+                       onchange="updatePerm('${name}','canEdit',this.checked)">
+            </td>
+            <td style="background: #fff5f5;">
+                <input type="checkbox" ${u.canDelete?'checked':''} 
+                       ${(!iCanManage || isJaokha) ? 'disabled' : ''} 
+                       onchange="updatePerm('${name}','canDelete',this.checked)">
+            </td>
+            <td>
+                ${(!isJaokha && iCanDelete) ? `<button onclick="deleteUser('${name}')" class="text-red-400 font-bold text-[10px]">DEL</button>` : '-'}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
         window.updatePerm = async (n, f, v) => {
             const snap = await get(child(ref(db), `portal_users/${currentUser}`));
             const myData = snap.val() || {};
