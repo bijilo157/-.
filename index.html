@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@200;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #ff85a2; --secondary: #4a90e2; --edit-color: #2ecc71; --delete-color: #ff85a2; }
+        :root { --primary: #ff85a2; --secondary: #4a90e2; --edit-color: #2ecc71; --delete-color: #ff85a2; --market-color: #ffb347; --mine-color: #2ecc71; }
         *, *::before, *::after { box-sizing: border-box; }
         body { font-family: 'Kanit', sans-serif; margin: 0; background: linear-gradient(135deg, #a0c7f3 0%, #a0c7f3 100%); background-attachment: fixed; padding: 15px; min-height: 100vh; overflow-y: auto; }
         
@@ -17,7 +17,6 @@
         .fade-in { animation: fadeIn 1s ease-in; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Modal Styles */
         #authModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.2); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; }
         .modal-box { background: white; padding: 30px; border-radius: 32px; width: 100%; max-width: 350px; box-shadow: 0 30px 60px rgba(0,0,0,0.12); text-align: center; border: 1px solid rgba(255,255,255,0.8); }
         .modal-input { width: 100%; border: 1px solid #f0f0f0; padding: 14px; border-radius: 16px; margin-bottom: 12px; outline: none; text-align: center; font-size: 14px; transition: 0.3s; background: #fafafa; }
@@ -40,6 +39,7 @@
         thead th { padding: 15px 10px; font-size: 10px; letter-spacing: 1px; text-align: center; border: none; }
         .th-name { background-color: #f8fafc; color: #64748b; border-radius: 12px 0 0 12px; }
         .th-pin { background-color: #fffbeb; color: #d97706; }
+        .th-rank { background-color: #fdf2f8; color: #db2777; }
         .th-edit { background-color: #f0fdf4; color: #16a34a; }
         .th-delete { background-color: #fff1f2; color: #e11d48; }
         .th-action { background-color: #f1f5f9; color: #475569; border-radius: 0 12px 12px 0; }
@@ -61,30 +61,33 @@
         .logout-btn:hover { background: rgba(255,0,0,0.3); }
 
         .gang-box { margin-top: 10px; }
-        .rule-input { border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px 15px; font-size: 13px; outline: none; }
+        .rule-input { border: 2px solid #e2e8f0; border-radius: 10px; padding: 8px 15px; font-size: 13px; outline: none; transition: 0.2s; color: #334155; font-weight: 500; }
+        .rule-input:focus { border-color: var(--secondary); }
         .rule-btn { background: #4a90e2; color: white; padding: 8px 20px; border-radius: 10px; font-size: 12px; font-weight: bold; }
-        .rule-item { background: #fff5f8; padding: 10px 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 12px; border: 1px solid #ffdce5; }
         
-        /* สไตล์ตระกูลที่แยกประเภท */
+        .rule-item { background: #fff; padding: 12px 18px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; border: 2px solid #f1f5f9; box-shadow: 0 2px 5px rgba(0,0,0,0.02); transition: 0.2s; }
+        .rule-item:hover { border-color: #cbd5e1; transform: translateX(5px); }
+        
         .gang-item { background: white; padding: 8px 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 13px; font-weight: 600; border: 1px solid #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         .item-fam { border-left: 4px solid var(--primary) !important; background: #fff5f8; }
         .item-gang { border-left: 4px solid var(--secondary) !important; background: #f8fafc; }
 
-        /* Type Switcher */
         .type-btn { padding: 8px 12px; border-radius: 10px; font-size: 11px; cursor: pointer; font-weight: bold; border: 2px solid transparent; transition: 0.2s; }
         .type-btn.active-fam { background: #fff5f8; color: var(--primary); border-color: var(--primary); }
         .type-btn.active-gang { background: #f0f7ff; color: var(--secondary); border-color: var(--secondary); }
         .type-btn.inactive { background: #f1f5f9; color: #94a3b8; }
         
-        .log-item { font-size: 11px; padding: 8px; border-bottom: 1px solid #eee; display: flex; flex-direction: column; gap: 2px; }
-        .log-header { display: flex; justify-content: space-between; align-items: center; }
-        .log-detail { font-size: 10px; color: #64748b; background: #f1f5f9; padding: 4px 8px; border-radius: 6px; margin-top: 4px; }
-        .log-tag-loc { font-size: 9px; padding: 2px 6px; border-radius: 4px; background: #e0f2fe; color: #0369a1; font-weight: bold; }
-        .restore-btn { background: #2ecc71; color: white; padding: 2px 8px; border-radius: 5px; font-size: 10px; }
+        .price-card { background: #fff; border: 2px solid #f1f5f9; border-radius: 12px; padding: 15px; margin-bottom: 10px; }
+        .price-label { font-size: 10px; color: #64748b; margin-bottom: 4px; font-weight: bold; text-transform: uppercase; }
 
-        #adminTableWrapper::-webkit-scrollbar { width: 6px; }
-        #adminTableWrapper::-webkit-scrollbar-track { background: transparent; }
-        #adminTableWrapper::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .editable-value { cursor: pointer; padding: 2px 6px; border-radius: 4px; border: 1px solid transparent; transition: 0.2s; font-weight: 800; color: #1e293b; }
+        .editable-value:hover { background: #f1f5f9; border-color: #cbd5e1; }
+        .edit-input { width: 100%; text-align: center; border: 2px solid var(--secondary); border-radius: 6px; font-size: 13px; outline: none; background: white; color: black; font-weight: bold; }
+        
+        .category-header { background: #334155; color: #ffffff; padding: 10px 15px; border-radius: 12px; font-size: 12px; font-weight: bold; letter-spacing: 1px; margin-top: 20px; margin-bottom: 12px; border-left: 6px solid var(--secondary); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+
+        .card-farm { border: 2px solid var(--market-color) !important; }
+        .card-mine { border: 2px solid var(--mine-color) !important; }
     </style>
 </head>
 <body class="flex items-center justify-center p-6">
@@ -114,45 +117,95 @@
                 <div class="admin-tabs">
                     <div class="tab-btn active" onclick="showTab('tab-users', this)">👥 สมาชิก</div>
                     <div class="tab-btn" onclick="showTab('tab-gangs', this)">🏰 ตระกูล</div>
+                    <div class="tab-btn" onclick="showTab('tab-medicine', this)">💊 ราคายา</div>
+                    <div class="tab-btn" onclick="showTab('tab-market', this)">⛏️ รอบเมือง/เหมือง</div>
                     <div class="tab-btn" onclick="showTab('tab-rules', this)">📜 กฎ</div>
-                    <div id="jaokhaTabBtn" class="tab-btn" style="display:none;" onclick="showTab('tab-logs', this)">💎 Logs & Recycle</div>
                 </div>
                 
-                <div id="tab-users" class="admin-content-section active"><div class="overflow-x-auto"><table><thead><tr><th class="th-name">NAME</th><th class="th-pin">PIN CODE</th><th class="th-edit">EDIT</th><th class="th-delete">DELETE</th><th class="th-action">ACTION</th></tr></thead><tbody id="userTableBody"></tbody></table></div></div>
+                <div id="tab-users" class="admin-content-section active"><div class="overflow-x-auto"><table><thead><tr><th class="th-name">NAME (Edit)</th><th class="th-pin">PIN (Edit)</th><th class="th-rank">ADMIN</th><th class="th-edit">EDIT</th><th class="th-delete">DELETE</th><th class="th-action">ACTION</th></tr></thead><tbody id="userTableBody"></tbody></table></div></div>
                 
                 <div id="tab-gangs" class="admin-content-section">
                     <div class="gang-box">
                         <h3 class="text-[10px] font-bold tracking-[0.2em] uppercase text-slate-400 mb-4">Gang Management</h3>
-                        
                         <div class="flex flex-col gap-3 mb-4">
-                            <!-- ตัวเลือกว่าจะเพิ่ม แฟม หรือ แก๊ง -->
                             <div class="flex gap-2">
                                 <div id="typeFam" class="type-btn active-fam" onclick="setGangType('fam')">🌸 FAMILY</div>
                                 <div id="typeGang" class="type-btn inactive" onclick="setGangType('gang')">🛡️ GANG</div>
                             </div>
-                            
                             <div class="flex gap-2">
                                 <input type="text" id="gangNameInput" class="rule-input w-full" placeholder="พิมพ์ชื่อตระกูลที่นี่...">
                                 <button onclick="addGang()" class="rule-btn whitespace-nowrap" id="addGangBtn" style="background:var(--primary)">เพิ่มตระกูล +</button>
                             </div>
                         </div>
-
                         <div id="gangListDisplay" class="grid grid-cols-1 md:grid-cols-2 gap-2"></div>
                     </div>
                 </div>
-                
-                <div id="tab-rules" class="admin-content-section"><div class="gang-box"><h3 class="text-[10px] font-bold tracking-[0.2em] uppercase text-slate-400 mb-4">Rule Management</h3><div class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4"><input type="text" id="ruleNo" class="rule-input" placeholder="ข้อที่..."><input type="text" id="ruleDetail" class="rule-input md:col-span-2" placeholder="รายละเอียดกฎ..."><input type="number" id="ruleFine" class="rule-input" placeholder="ค่าปรับ..."><select id="ruleCategory" class="rule-input"><option value="basic">⚖️ กฎพื้นฐาน</option><option value="blacklist">🚫 Blacklist</option><option value="story">🔥 กฎสตอรี่</option></select><button onclick="addRule()" class="rule-btn md:col-span-4">เพิ่มข้อกฎ +</button></div><div id="ruleListDisplay" class="flex flex-col gap-1"></div></div></div>
 
-                <div id="tab-logs" class="admin-content-section">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="bg-slate-50 p-4 rounded-xl">
-                            <h4 class="text-[10px] font-bold mb-3 text-slate-500 uppercase">Activity Logs (ทุกเว็บไซต์)</h4>
-                            <div id="logDisplay" class="max-h-[400px] overflow-y-auto pr-2"></div>
+                <div id="tab-medicine" class="admin-content-section">
+                    <div class="gang-box">
+                        <h3 class="text-[10px] font-bold tracking-[0.2em] uppercase text-slate-400 mb-4">Medicine & Service Prices</h3>
+                        <div class="bg-slate-50 p-4 rounded-2xl mb-6 border-2 border-slate-100">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                                <select id="medType" class="rule-input">
+                                    <option value="เพน">💉 เพน</option>
+                                    <option value="ศัลยกรรม">✂️ ศัลยกรรม</option>
+                                    <option value="ยา">💊 ยา (ระบุชื่อด้านล่าง)</option>
+                                </select>
+                                <input type="text" id="medName" class="rule-input" placeholder="ระบุชื่อยา (ถ้าเลือกหมวดยา)">
+                            </div>
+                            <div class="grid grid-cols-3 gap-3 mb-2">
+                                <div><div class="price-label">ราคา: ประชาชน</div><input type="number" id="pCitizen" class="rule-input w-full" placeholder="ราคา"></div>
+                                <div><div class="price-label">ราคา: แก๊ง</div><input type="number" id="pGang" class="rule-input w-full" placeholder="ราคา"></div>
+                                <div><div class="price-label">ราคา: แฟม</div><input type="number" id="pFam" class="rule-input w-full" placeholder="ราคา"></div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3 mb-4">
+                                <div><div class="price-label">แพ็คละ: ประชาชน</div><input type="number" id="packCitizen" class="rule-input w-full" placeholder="จำนวน"></div>
+                                <div><div class="price-label">แพ็คละ: แก๊ง</div><input type="number" id="packGang" class="rule-input w-full" placeholder="จำนวน"></div>
+                                <div><div class="price-label">แพ็คละ: แฟม</div><input type="number" id="packFam" class="rule-input w-full" placeholder="จำนวน"></div>
+                            </div>
+                            <button onclick="saveMedicine()" class="rule-btn w-full">บันทึกรายการราคา +</button>
                         </div>
-                        <div class="bg-red-50 p-4 rounded-xl">
-                            <h4 class="text-[10px] font-bold mb-3 text-red-400 uppercase">Trash (ถังขยะกลาง)</h4>
-                            <div id="trashDisplay" class="max-h-[400px] overflow-y-auto pr-2"></div>
+                        <div id="medicineListDisplay"></div>
+                    </div>
+                </div>
+
+                <div id="tab-market" class="admin-content-section">
+                    <div class="gang-box">
+                        <h3 class="text-[10px] font-bold tracking-[0.2em] uppercase text-slate-400 mb-4">Market & Mining Management</h3>
+                        <div class="bg-slate-50 p-4 rounded-2xl mb-6 border-2 border-slate-100">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                                <input type="text" id="marketItemName" class="rule-input" placeholder="ชื่อสินค้า (เช่น กล้วย, แร่เหล็ก)">
+                                <select id="marketCategory" class="rule-input">
+                                    <option value="farm">🌱 รอบเมือง (ฟาร์ม)</option>
+                                    <option value="mine">⛏️ เหมือง</option>
+                                    <option value="special">✨ อื่นๆ</option>
+                                </select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3 mb-4">
+                                <div><div class="price-label">ราคาเรท (ต่อชิ้น)</div><input type="number" id="marketRate" class="rule-input w-full" placeholder="ราคาขาย"></div>
+                                <div><div class="price-label">แพ็คละ (จำนวน)</div><input type="number" id="marketPack" class="rule-input w-full" placeholder="เช่น 40"></div>
+                            </div>
+                            <button onclick="saveMarketItem()" class="rule-btn w-full" style="background:var(--secondary)">เพิ่มสินค้า/เหมือง +</button>
                         </div>
+                        <div id="marketListDisplay" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                    </div>
+                </div>
+                
+                <div id="tab-rules" class="admin-content-section">
+                    <div class="gang-box">
+                        <h3 class="text-[10px] font-bold tracking-[0.2em] uppercase text-slate-400 mb-4">Rule Management (Update to Web 1)</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-6 p-4 bg-slate-50 rounded-2xl border-2 border-slate-200">
+                            <input type="number" id="ruleNo" class="rule-input" placeholder="เลขข้อ">
+                            <input type="text" id="ruleDetail" class="rule-input md:col-span-2" placeholder="รายละเอียดกฎ...">
+                            <input type="number" id="ruleFine" class="rule-input" placeholder="ค่าปรับ">
+                            <select id="ruleCategory" class="rule-input">
+                                <option value="basic">⚖️ กฎพื้นฐาน</option>
+                                <option value="blacklist">🚫 Blacklist</option>
+                                <option value="story">🔥 กฎสตอรี่</option>
+                            </select>
+                            <button onclick="addRule()" class="rule-btn md:col-span-4 shadow-md bg-slate-800 hover:bg-black transition-all">เพิ่มข้อกฎหมาย +</button>
+                        </div>
+                        <div id="ruleListDisplay" class="flex flex-col gap-1 max-h-[500px] overflow-y-auto pr-2"></div>
                     </div>
                 </div>
             </div>
@@ -187,37 +240,32 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         
-        const ADMINS = ["High", "Cookie", "Jaokha"];
         const SUPER_ADMIN = "Jaokha";
-
-        let currentMode = 'login';
-        let pendingRedirect = '';
-        let selectedGangType = 'fam'; // Default type
-        const currentUser = localStorage.getItem('portalUser');
+        let currentUser = localStorage.getItem('portalUser');
         const thaiSort = (a, b) => a.localeCompare(b, 'th', { sensitivity: 'base' });
 
         async function saveLog(action, detail, location = "หน้าหลัก") {
             push(ref(db, 'activity_logs'), {
-                user: currentUser || 'Unknown',
-                action,
-                detail,
-                location: location,
-                timestamp: serverTimestamp()
+                user: currentUser || 'Unknown', action, detail, location, timestamp: serverTimestamp()
             });
         }
+
+        window.updateRank = async (targetName, isAdmin) => {
+            if (currentUser !== SUPER_ADMIN) return;
+            await update(ref(db, `portal_users/${targetName}`), { isAdmin: isAdmin });
+            saveLog("RANK_UPDATE", `Changed ${targetName} admin status to ${isAdmin}`);
+        };
 
         window.editUsername = async (oldName) => {
             if (currentUser !== SUPER_ADMIN) return;
             const newName = prompt(`เปลี่ยนชื่อสำหรับคุณ ${oldName} เป็น:`, oldName);
-            if (newName && newName !== oldName) {
-                const snapshot = await get(child(ref(db), `portal_users/${newName}`));
+            if (newName && newName.trim() !== "" && newName !== oldName) {
+                const snapshot = await get(child(ref(db), `portal_users/${newName.trim()}`));
                 if (snapshot.exists()) return alert("ชื่อนี้มีในระบบแล้ว");
-
                 const userSnap = await get(child(ref(db), `portal_users/${oldName}`));
                 const userData = userSnap.val();
-                userData.name = newName;
-
-                await set(ref(db, `portal_users/${newName}`), userData);
+                userData.name = newName.trim();
+                await set(ref(db, `portal_users/${newName.trim()}`), userData);
                 await remove(ref(db, `portal_users/${oldName}`));
                 saveLog("ADMIN_EDIT_NAME", `Jaokha changed ${oldName} to ${newName}`);
                 alert("เปลี่ยนชื่อสำเร็จ!");
@@ -234,140 +282,41 @@
             } else if (newPin) alert("PIN ต้องมี 4 หลัก");
         };
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && document.getElementById('authModal').style.display === 'flex') {
-                document.getElementById('modalPrimaryBtn').click();
-            }
-        });
-
-        window.openAuth = (mode, redirect = '') => {
-            currentMode = mode;
-            pendingRedirect = redirect;
-            const container = document.getElementById('inputContainer');
-            const links = document.getElementById('modalLinks');
-            const btn = document.getElementById('modalPrimaryBtn');
-            const title = document.getElementById('modalTitle');
-
-            document.getElementById('authModal').style.display = 'flex';
-            title.innerText = mode.toUpperCase().replace('CHANGE', 'CHANGE PIN');
-            container.innerHTML = '';
-            links.innerHTML = '';
-
-            if (mode === 'login' || mode === 'register') {
-                container.innerHTML = `
-                    <input type="text" id="authName" class="modal-input" placeholder="ใส่ชื่อของคุณ">
-                    <input type="password" id="authPin" class="modal-input" placeholder="${mode==='login'?'ใส่รหัส PIN':'ตั้งรหัส PIN 4 หลัก'}" maxlength="4">
-                `;
-                btn.innerText = mode === 'login' ? 'เข้าสู่ระบบ' : 'ยืนยันลงทะเบียน';
-                btn.onclick = () => mode === 'login' ? finishLogin() : finishRegister();
-                links.innerHTML = mode === 'login' 
-                    ? `<span class="modal-link" onclick="openAuth('register')">ลงทะเบียนสมาชิก</span><span class="modal-link" onclick="openAuth('change')">เปลี่ยนรหัส PIN</span>`
-                    : `<span class="modal-link" onclick="openAuth('login')">มีบัญชีอยู่แล้ว? เข้าสู่ระบบ</span>`;
-            } 
-            else if (mode === 'change') {
-                container.innerHTML = `
-                    <input type="text" id="changeName" class="modal-input" placeholder="ใส่ชื่อของคุณ">
-                    <input type="password" id="newPin" class="modal-input" placeholder="ตั้งรหัส PIN ใหม่ 4 หลัก" maxlength="4">
-                `;
-                btn.innerText = 'ยืนยันการเปลี่ยนรหัส';
-                btn.onclick = handleChangePin;
-                links.innerHTML = `<span class="modal-link" onclick="openAuth('login')">ยกเลิกและกลับไปหน้าล็อกอิน</span>`;
-            }
-        };
-
-        window.closeModal = () => { document.getElementById('authModal').style.display = 'none'; };
-
-        async function finishRegister() {
-            const name = document.getElementById('authName').value.trim();
-            const pin = document.getElementById('authPin').value;
-            if (!name || pin.length !== 4) return alert("กรุณากรอกข้อมูลให้ครบ (PIN 4 หลัก)");
-            const snapshot = await get(child(ref(db), `portal_users/${name}`));
-            if (snapshot.exists()) return alert("ชื่อนี้ถูกใช้ไปแล้ว");
-            await set(ref(db, `portal_users/${name}`), { name, pin, canEdit: false, canDelete: false });
-            saveLog("REGISTER", `User ${name} registered`);
-            alert("ลงทะเบียนสำเร็จ! รอ Admin อนุมัติยศ");
-            closeModal();
-        }
-
-        async function finishLogin() {
-            const name = document.getElementById('authName').value.trim();
-            const pin = document.getElementById('authPin').value;
-            if (!name || !pin) return alert("กรุณากรอกชื่อและรหัส");
-            const snapshot = await get(child(ref(db), `portal_users/${name}`));
-            if (!snapshot.exists()) return alert("ไม่พบชื่อในระบบ");
-            if (snapshot.val().pin === pin) {
-                localStorage.setItem('portalUser', name);
-                saveLog("LOGIN", `User ${name} logged in`);
-                pendingRedirect ? window.location.href = pendingRedirect : location.reload();
-            } else alert("PIN ไม่ถูกต้อง");
-        }
-
-        async function handleChangePin() {
-            const name = document.getElementById('changeName').value.trim();
-            const newP = document.getElementById('newPin').value;
-            if (!name || newP.length !== 4) return alert("กรุณากรอกชื่อและ PIN ใหม่ 4 หลัก");
-            const snapshot = await get(child(ref(db), `portal_users/${name}`));
-            if (!snapshot.exists()) return alert("ไม่พบชื่อผู้ใช้ในระบบ");
-            await update(ref(db, `portal_users/${name}`), { pin: newP });
-            saveLog("CHANGE_PIN", `User ${name} changed PIN`);
-            alert("เปลี่ยนรหัส PIN สำเร็จแล้ว!");
-            openAuth('login');
-        }
-
-        window.showTab = (tabId, btn) => {
-            document.querySelectorAll('.admin-content-section').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            btn.classList.add('active');
-            if(tabId === 'tab-logs') loadSpecialLogs();
-        };
-
-        window.toggleAdminTable = () => {
-            const wrapper = document.getElementById('adminTableWrapper');
-            wrapper.style.display = wrapper.style.display === 'block' ? 'none' : 'block';
-        };
-
-        window.checkAndGo = (url) => {
-            localStorage.getItem('portalUser') ? window.location.href = url : openAuth('login', url);
-        };
-
-        window.logout = () => { saveLog("LOGOUT", `${currentUser} logged out`); localStorage.clear(); location.reload(); };
-
-        if (currentUser) {
-            document.getElementById('logoutBtn').style.display = 'block';
-            document.getElementById('loginBtn').style.display = 'none';
-            document.getElementById('welcomeMsg').innerText = `WELCOME: ${currentUser}`;
-            if (ADMINS.includes(currentUser)) {
-                document.getElementById('adminSection').style.display = 'block';
-                onValue(ref(db, 'portal_users'), (snap) => renderUserTable(snap.val()));
-                loadGangs(); loadRules();
-                if(currentUser === SUPER_ADMIN) document.getElementById('jaokhaTabBtn').style.display = 'block';
-            }
-        }
-
         function renderUserTable(users) {
             const tbody = document.getElementById('userTableBody');
             if(!tbody || !users) return; tbody.innerHTML = "";
             const sortedNames = Object.keys(users).sort(thaiSort);
+            
             sortedNames.forEach(name => {
-                const isMain = ADMINS.includes(name);
-                const { canEdit, canDelete, pin } = users[name];
+                const u = users[name];
+                const isJaokha = (name === SUPER_ADMIN);
+                const canManage = (currentUser === SUPER_ADMIN);
+                
                 let nClass = "user-name status-none";
-                if (canEdit && canDelete) nClass = "user-name status-both";
-                else if (canEdit) nClass = "user-name status-edit";
-                else if (canDelete) nClass = "user-name status-delete";
-
-                const isJaokha = (currentUser === SUPER_ADMIN);
-                const nameClickAttr = isJaokha ? `onclick="editUsername('${name}')" style="cursor:pointer;" title="จิ้มเปลี่ยนชื่อ"` : "";
-                const pinDisplay = isJaokha ? `<span onclick="editUserPin('${name}', '${pin}')" class="underline decoration-dotted text-amber-600 font-bold cursor-pointer">${pin}</span>` : '****';
+                if (u.canEdit && u.canDelete) nClass = "user-name status-both";
+                else if (u.canEdit) nClass = "user-name status-edit";
+                else if (u.canDelete) nClass = "user-name status-delete";
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td><span class="${nClass}" ${nameClickAttr}>${name}</span> ${isMain?'⭐':''}</td>
-                    <td class="text-xs text-gray-400">${pinDisplay}</td>
-                    <td><input type="checkbox" ${canEdit?'checked':''} onchange="updatePerm('${name}','canEdit',this.checked)"></td>
-                    <td><input type="checkbox" ${canDelete?'checked':''} onchange="updatePerm('${name}','canDelete',this.checked)"></td>
-                    <td>${!isMain?`<button onclick="deleteUser('${name}')" class="text-red-300 font-bold text-[10px]">DEL</button>`:'-'}</td>
+                    <td>
+                        <span class="${nClass} ${canManage?'cursor-pointer underline decoration-dotted':''}" 
+                              onclick="editUsername('${name}')">${name}</span>
+                    </td>
+                    <td>
+                        <span class="${canManage?'cursor-pointer underline decoration-dotted text-amber-600 font-bold':''}" 
+                              onclick="editUserPin('${name}', '${u.pin}')">
+                              ${canManage ? u.pin : '****'}
+                        </span>
+                    </td>
+                    <td>
+                        <input type="checkbox" ${u.isAdmin ? 'checked' : ''} 
+                               ${(!canManage || isJaokha) ? 'disabled' : ''} 
+                               onchange="updateRank('${name}', this.checked)">
+                    </td>
+                    <td><input type="checkbox" ${u.canEdit?'checked':''} onchange="updatePerm('${name}','canEdit',this.checked)"></td>
+                    <td><input type="checkbox" ${u.canDelete?'checked':''} onchange="updatePerm('${name}','canDelete',this.checked)"></td>
+                    <td>${!isJaokha ? `<button onclick="deleteUser('${name}')" class="text-red-400 font-bold text-[10px]">DEL</button>` : '-'}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -385,165 +334,254 @@
             }
         };
 
-        // --- ส่วนจัดการตระกูล ---
-        window.setGangType = (type) => {
-            selectedGangType = type;
-            const famBtn = document.getElementById('typeFam');
-            const gangBtn = document.getElementById('typeGang');
-            const addBtn = document.getElementById('addGangBtn');
-
-            if(type === 'fam') {
-                famBtn.className = "type-btn active-fam";
-                gangBtn.className = "type-btn inactive";
-                addBtn.style.background = "var(--primary)";
-            } else {
-                famBtn.className = "type-btn inactive";
-                gangBtn.className = "type-btn active-gang";
-                addBtn.style.background = "var(--secondary)";
-            }
+        window.openAuth = (mode, redirect = '') => {
+            const container = document.getElementById('inputContainer');
+            const links = document.getElementById('modalLinks');
+            const btn = document.getElementById('modalPrimaryBtn');
+            const title = document.getElementById('modalTitle');
+            document.getElementById('authModal').style.display = 'flex';
+            title.innerText = mode.toUpperCase();
+            container.innerHTML = `
+                <input type="text" id="authName" class="modal-input" placeholder="ใส่ชื่อ">
+                <input type="password" id="authPin" class="modal-input" placeholder="PIN 4 หลัก" maxlength="4">
+            `;
+            btn.innerText = mode === 'login' ? 'เข้าสู่ระบบ' : 'ลงทะเบียน';
+            btn.onclick = () => {
+                const n = document.getElementById('authName').value.trim();
+                const p = document.getElementById('authPin').value;
+                if(mode==='login') finishLogin(n, p, redirect); else finishRegister(n, p);
+            };
+            links.innerHTML = mode === 'login' ? 
+                `<span class="modal-link" onclick="openAuth('register')">สมัครสมาชิก</span>` : 
+                `<span class="modal-link" onclick="openAuth('login')">กลับไปล็อกอิน</span>`;
         };
 
+        async function finishLogin(n, p, red) {
+            const snap = await get(child(ref(db), `portal_users/${n}`));
+            if(snap.exists() && snap.val().pin === p) {
+                localStorage.setItem('portalUser', n);
+                saveLog("LOGIN", `User ${n} logged in`);
+                red ? location.href = red : location.reload();
+            } else alert("ชื่อหรือ PIN ไม่ถูกต้อง");
+        }
+
+        async function finishRegister(n, p) {
+            if(!n || p.length !== 4) return alert("กรอกข้อมูลให้ครบ");
+            const snap = await get(child(ref(db), `portal_users/${n}`));
+            if(snap.exists()) return alert("ชื่อนี้ถูกใช้แล้ว");
+            await set(ref(db, `portal_users/${n}`), { name: n, pin: p, canEdit: false, canDelete: false, isAdmin: false });
+            alert("ลงทะเบียนสำเร็จ รอ Admin อนุมัติ");
+            location.reload();
+        }
+
+        window.logout = () => { localStorage.clear(); location.reload(); };
+        window.closeModal = () => document.getElementById('authModal').style.display='none';
+        window.showTab = (id, b) => {
+            document.querySelectorAll('.admin-content-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            b.classList.add('active');
+        };
+        window.toggleAdminTable = () => {
+            const w = document.getElementById('adminTableWrapper');
+            w.style.display = w.style.display === 'block' ? 'none' : 'block';
+        };
+        window.checkAndGo = (u) => currentUser ? location.href=u : openAuth('login', u);
+
+        if (currentUser) {
+            document.getElementById('logoutBtn').style.display = 'block';
+            document.getElementById('loginBtn').style.display = 'none';
+            document.getElementById('welcomeMsg').innerText = `WELCOME: ${currentUser}`;
+            get(child(ref(db), `portal_users/${currentUser}`)).then(snap => {
+                const u = snap.val();
+                if (u && (u.isAdmin || currentUser === SUPER_ADMIN)) {
+                    document.getElementById('adminSection').style.display = 'block';
+                    onValue(ref(db, 'portal_users'), s => renderUserTable(s.val()));
+                    loadGangs(); loadRules(); loadMedicines(); loadMarketItems();
+                }
+            });
+        }
+
+        let selectedGangType = 'fam';
+        window.setGangType = (t) => {
+            selectedGangType = t;
+            document.getElementById('typeFam').className = t==='fam'?'type-btn active-fam':'type-btn inactive';
+            document.getElementById('typeGang').className = t==='gang'?'type-btn active-gang':'type-btn inactive';
+        };
         function loadGangs() {
             onValue(ref(db, 'gang_list'), (snap) => {
-                const display = document.getElementById('gangListDisplay'); 
-                if(!display) return;
-                display.innerHTML = ""; 
-                const gangs = snap.val();
-                
-                if(gangs) {
-                    const sortedGangs = Object.entries(gangs).sort((a, b) => 
-                        thaiSort(a[1].name || a[1], b[1].name || b[1])
-                    );
+                const display = document.getElementById('gangListDisplay'); if(!display) return;
+                display.innerHTML = ""; const gangs = snap.val();
+                if(gangs) Object.entries(gangs).sort((a,b)=>thaiSort(a[1].name||a[1], b[1].name||b[1])).forEach(([k,v])=>{
+                    const name = v.name || v; const isFam = v.type==='fam';
+                    const div = document.createElement('div'); div.className = `gang-item ${isFam?'item-fam':'item-gang'}`;
+                    div.innerHTML = `<span>${name}</span><button onclick="deleteGang('${k}','${name}')">✕</button>`;
+                    display.appendChild(div);
+                });
+            });
+        }
+        window.addGang = () => {
+            const i = document.getElementById('gangNameInput');
+            if(i.value) { push(ref(db, 'gang_list'), {name: i.value, type: selectedGangType}); i.value=""; }
+        };
+        window.deleteGang = (k, n) => confirm(`ลบ ${n}?`) && remove(ref(db, `gang_list/${k}`));
 
-                    sortedGangs.forEach(([k, v]) => {
-                        const name = v.name || v;
-                        // ใช้ข้อมูล type จาก DB ถ้าไม่มีให้เดาจากชื่อ (เพื่อรองรับข้อมูลเก่า)
-                        const isFamily = v.type === 'fam' || name.includes("แฟม") || name.toLowerCase().includes("fam");
-                        
-                        const div = document.createElement('div'); 
-                        div.className = `gang-item ${isFamily ? 'item-fam' : 'item-gang'}`;
-                        
+        window.saveMedicine = () => {
+            const type = document.getElementById('medType').value;
+            const nameInput = document.getElementById('medName').value;
+            const citizen = document.getElementById('pCitizen').value || 0;
+            const gang = document.getElementById('pGang').value || 0;
+            const fam = document.getElementById('pFam').value || 0;
+            const packC = document.getElementById('packCitizen').value || 0;
+            const packG = document.getElementById('packGang').value || 0;
+            const packF = document.getElementById('packFam').value || 0;
+            let finalName = type === 'ยา' ? nameInput : type;
+            if(!finalName) return alert("กรุณาระบุชื่อยา");
+            set(ref(db, `service_prices/${finalName}`), { 
+                type, name: finalName, 
+                prices: { citizen: Number(citizen), gang: Number(gang), fam: Number(fam) },
+                packs: { citizen: Number(packC), gang: Number(packG), fam: Number(packF) }
+            });
+            document.getElementById('medName').value = "";
+            document.getElementById('pCitizen').value = ""; document.getElementById('pGang').value = ""; document.getElementById('pFam').value = "";
+            document.getElementById('packCitizen').value = ""; document.getElementById('packGang').value = ""; document.getElementById('packFam').value = "";
+        };
+
+        window.startInlineEdit = (element, dbPath, fieldPath) => {
+            const oldValue = element.innerText;
+            const originalElement = element.cloneNode(true);
+            const input = document.createElement('input');
+            input.type = 'number'; input.value = oldValue; input.className = 'edit-input';
+            element.replaceWith(input);
+            input.focus(); input.select();
+            let isFinished = false;
+            const finishEdit = async () => {
+                if (isFinished) return; isFinished = true;
+                const newValue = Number(input.value);
+                if (!isNaN(newValue) && newValue !== Number(oldValue)) {
+                    await update(ref(db, dbPath), { [fieldPath]: newValue });
+                    saveLog("INLINE_EDIT", `Updated ${dbPath}/${fieldPath} to ${newValue}`);
+                }
+                originalElement.innerText = newValue; 
+                input.replaceWith(originalElement);
+            };
+            input.onblur = finishEdit;
+            input.onkeydown = (e) => { 
+                if(e.key === 'Enter') finishEdit();
+                if(e.key === 'Escape') { isFinished = true; originalElement.innerText = oldValue; input.replaceWith(originalElement); }
+            };
+        };
+
+        window.saveMarketItem = () => {
+            const name = document.getElementById('marketItemName').value;
+            const cat = document.getElementById('marketCategory').value;
+            const rate = document.getElementById('marketRate').value || 0;
+            const pack = document.getElementById('marketPack').value || 0;
+            if(!name) return alert("ระบุชื่อสินค้า");
+            set(ref(db, `market_items/${name}`), { name, category: cat, rate: Number(rate), pack: Number(pack) });
+            document.getElementById('marketItemName').value = "";
+        };
+
+        function loadMarketItems() {
+            onValue(ref(db, 'market_items'), (snap) => {
+                const display = document.getElementById('marketListDisplay'); if(!display) return;
+                display.innerHTML = ""; const items = snap.val();
+                if(items) {
+                    const sorted = Object.entries(items).sort((a,b)=>thaiSort(a[0], b[0]));
+                    sorted.forEach(([k, v]) => {
+                        const cardClass = v.category === 'mine' ? 'card-mine' : 'card-farm';
+                        const div = document.createElement('div');
+                        div.className = `price-card ${cardClass} relative`;
                         div.innerHTML = `
-                            <div class="flex items-center gap-2">
-                                <span class="text-[9px] font-bold ${isFamily ? 'text-[#ff85a2]' : 'text-[#4a90e2]'}">
-                                    ${isFamily ? '● FAM' : '○ GANG'}
-                                </span>
-                                <span>${name}</span>
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="font-bold text-slate-700">${v.category==='mine'?'⛏️':'🌱'} ${v.name}</div>
+                                <button onclick="deleteMarketItem('${k}')" class="text-slate-300 hover:text-red-500">✕</button>
                             </div>
-                            <button onclick="deleteGang('${k}', '${name}')" class="text-red-300 hover:text-red-500 transition-colors">✕</button>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="bg-slate-50 p-2 rounded-lg text-center">
+                                    <div class="price-label">ราคาเรท</div>
+                                    <span class="editable-value" onclick="startInlineEdit(this, 'market_items/${k}', 'rate')">${v.rate}</span>
+                                </div>
+                                <div class="bg-slate-50 p-2 rounded-lg text-center">
+                                    <div class="price-label">แพ็คละ</div>
+                                    <span class="editable-value" onclick="startInlineEdit(this, 'market_items/${k}', 'pack')">${v.pack}</span>
+                                </div>
+                            </div>
                         `;
                         display.appendChild(div);
                     });
                 }
             });
         }
+        window.deleteMarketItem = (k) => confirm(`ลบรายการนี้?`) && remove(ref(db, `market_items/${k}`));
 
-        window.addGang = () => { 
-            const i = document.getElementById('gangNameInput'); 
-            if(i.value) {
-                push(ref(db, 'gang_list'), {
-                    name: i.value, 
-                    type: selectedGangType,
-                    selected: true
-                });
-                saveLog("ADD_GANG", `Added ${selectedGangType}: ${i.value}`);
-                i.value=""; 
-            }
-        };
-
-        window.deleteGang = async (k, name) => {
-            if(confirm(`ต้องการลบ "${name}" ใช่หรือไม่?`)) {
-                const snap = await get(child(ref(db), `gang_list/${k}`));
-                await set(ref(db, `trash/gangs/${k}`), {...snap.val(), deletedBy: currentUser, deletedAt: serverTimestamp(), type: 'gang'});
-                await remove(ref(db, `gang_list/${k}`));
-                saveLog("DELETE_GANG", `Deleted gang: ${name}`);
-            }
-        };
+        function loadMedicines() {
+            onValue(ref(db, 'service_prices'), (snap) => {
+                const display = document.getElementById('medicineListDisplay'); if(!display) return;
+                display.innerHTML = ""; const meds = snap.val();
+                if(meds) {
+                    Object.entries(meds).sort((a,b)=>thaiSort(a[0], b[0])).forEach(([k, v]) => {
+                        const div = document.createElement('div'); div.className = "price-card";
+                        div.innerHTML = `
+                            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                                <span class="font-bold text-slate-800">${v.type === 'ยา' ? '💊' : (v.type === 'เพน' ? '💉' : '✂️')} ${v.name}</span>
+                                <button onclick="deleteMed('${k}')" class="text-xs text-red-300 hover:text-red-500">DELETE</button>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div class="text-center p-2 bg-blue-50 rounded-xl">
+                                    <div class="price-label">ประชาชน</div>
+                                    <div class="editable-value text-blue-600" onclick="startInlineEdit(this, 'service_prices/${k}/prices', 'citizen')">${v.prices.citizen}</div>
+                                    <div class="text-[9px] text-slate-400 mt-1">Pack: <span class="cursor-pointer" onclick="startInlineEdit(this, 'service_prices/${k}/packs', 'citizen')">${v.packs?.citizen||0}</span></div>
+                                </div>
+                                <div class="text-center p-2 bg-slate-50 rounded-xl">
+                                    <div class="price-label">แก๊ง</div>
+                                    <div class="editable-value text-slate-600" onclick="startInlineEdit(this, 'service_prices/${k}/prices', 'gang')">${v.prices.gang}</div>
+                                    <div class="text-[9px] text-slate-400 mt-1">Pack: <span class="cursor-pointer" onclick="startInlineEdit(this, 'service_prices/${k}/packs', 'gang')">${v.packs?.gang||0}</span></div>
+                                </div>
+                                <div class="text-center p-2 bg-pink-50 rounded-xl">
+                                    <div class="price-label">แฟม</div>
+                                    <div class="editable-value text-pink-600" onclick="startInlineEdit(this, 'service_prices/${k}/prices', 'fam')">${v.prices.fam}</div>
+                                    <div class="text-[9px] text-slate-400 mt-1">Pack: <span class="cursor-pointer" onclick="startInlineEdit(this, 'service_prices/${k}/packs', 'fam')">${v.packs?.fam||0}</span></div>
+                                </div>
+                            </div>
+                        `;
+                        display.appendChild(div);
+                    });
+                }
+            });
+        }
+        window.deleteMed = (k) => confirm(`ลบ ${k}?`) && remove(ref(db, `service_prices/${k}`));
 
         function loadRules() {
             onValue(ref(db, 'rule_list'), (snap) => {
                 const display = document.getElementById('ruleListDisplay'); if(!display) return;
                 display.innerHTML = ""; const rules = snap.val();
                 if(rules) {
-                    const sortedRules = Object.entries(rules).sort((a, b) => parseInt(a[1].no) - parseInt(b[1].no));
-                    sortedRules.forEach(([k, v]) => {
-                        const div = document.createElement('div'); div.className = "rule-item";
-                        div.innerHTML = `<div><span class="font-bold text-blue-500">[ข้อ ${v.no}]</span> ${v.detail}</div><button onclick="deleteRule('${k}', '${v.no}')" class="text-red-400">✕</button>`;
-                        display.appendChild(div);
+                    const cats = { basic: "⚖️ กฎพื้นฐาน", blacklist: "🚫 Blacklist", story: "🔥 กฎสตอรี่" };
+                    Object.keys(cats).forEach(catKey => {
+                        const catRules = Object.entries(rules).filter(([k,v])=>v.category===catKey).sort((a,b)=>a[1].no-b[1].no);
+                        if(catRules.length > 0) {
+                            const header = document.createElement('div'); header.className = "category-header";
+                            header.innerText = cats[catKey]; display.appendChild(header);
+                            catRules.forEach(([k, v]) => {
+                                const div = document.createElement('div'); div.className = "rule-item";
+                                div.innerHTML = `<div><span class="font-bold text-slate-400 mr-2">#${v.no}</span> ${v.detail}</div>
+                                    <div class="flex items-center gap-4"><span class="text-red-500 font-bold">${Number(v.fine).toLocaleString()}</span>
+                                    <button onclick="deleteRule('${k}')" class="text-slate-300 hover:text-red-500">✕</button></div>`;
+                                display.appendChild(div);
+                            });
+                        }
                     });
                 }
             });
         }
         window.addRule = () => {
-            const no = document.getElementById('ruleNo').value; const det = document.getElementById('ruleDetail').value;
-            const fine = document.getElementById('ruleFine').value; const cat = document.getElementById('ruleCategory').value;
-            if(no && det && fine) { 
-                push(ref(db, 'rule_list'), {no, detail: det, fine, category: cat, selected: true}); 
-                saveLog("ADD_RULE", `Added rule no: ${no}`);
-                document.getElementById('ruleNo').value=""; 
-                document.getElementById('ruleDetail').value="";
-                document.getElementById('ruleFine').value="";
-            }
+            const no = document.getElementById('ruleNo').value; const detail = document.getElementById('ruleDetail').value;
+            const fine = document.getElementById('ruleFine').value || 0; const category = document.getElementById('ruleCategory').value;
+            if(no && detail) { push(ref(db, 'rule_list'), { no: Number(no), detail, fine: Number(fine), category, selected: true });
+                document.getElementById('ruleNo').value=""; document.getElementById('ruleDetail').value=""; document.getElementById('ruleFine').value=""; }
         };
-        window.deleteRule = async (k, no) => {
-            if(confirm("ลบกฎข้อนี้?")) {
-                const snap = await get(child(ref(db), `rule_list/${k}`));
-                await set(ref(db, `trash/rules/${k}`), {...snap.val(), deletedBy: currentUser, deletedAt: serverTimestamp(), type: 'rule'});
-                await remove(ref(db, `rule_list/${k}`));
-                saveLog("DELETE_RULE", `Deleted rule no: ${no}`);
-            }
-        };
-
-        function loadSpecialLogs() {
-            onValue(ref(db, 'activity_logs'), (snap) => {
-                const logBox = document.getElementById('logDisplay');
-                if(!logBox) return;
-                logBox.innerHTML = "";
-                const data = snap.val();
-                if(data) {
-                    Object.values(data).reverse().slice(0, 100).forEach(log => {
-                        const date = log.timestamp ? new Date(log.timestamp).toLocaleString('th-TH') : '-';
-                        const locationTag = log.location ? `<span class="log-tag-loc">${log.location}</span>` : '';
-                        logBox.innerHTML += `
-                            <div class="log-item">
-                                <div class="log-header">
-                                    <span><b>${log.user}</b>: ${log.action}</span>
-                                    ${locationTag}
-                                </div>
-                                <div class="log-detail">${log.detail || '-'}</div>
-                                <span class="text-[9px] text-gray-400 mt-1">${date}</span>
-                            </div>`;
-                    });
-                }
-            });
-
-            onValue(ref(db, 'trash'), (snap) => {
-                const trashBox = document.getElementById('trashDisplay');
-                if(!trashBox) return;
-                trashBox.innerHTML = "";
-                const trash = snap.val();
-                if(!trash) { trashBox.innerHTML = "<p class='text-[10px] text-center mt-4 opacity-50'>ถังขยะว่างเปล่า</p>"; return; }
-                if(trash.gangs) Object.entries(trash.gangs).forEach(([k, v]) => {
-                    trashBox.innerHTML += `<div class="log-item"><div class="log-header"><span>🏰 ${v.name}</span><button onclick="restoreItem('gangs','${k}')" class="restore-btn">กู้คืน</button></div><div class="text-[9px] text-red-400">ลบโดย: ${v.deletedBy || 'Admin'}</div></div>`;
-                });
-                if(trash.rules) Object.entries(trash.rules).forEach(([k, v]) => {
-                    trashBox.innerHTML += `<div class="log-item"><div class="log-header"><span>📜 กฎข้อ ${v.no}</span><button onclick="restoreItem('rules','${k}')" class="restore-btn">กู้คืน</button></div><div class="text-[9px] text-red-400">ลบโดย: ${v.deletedBy || 'Admin'}</div></div>`;
-                });
-            });
-        }
-
-        window.restoreItem = async (type, id) => {
-            let path = (type === 'gangs') ? 'gang_list' : 'rule_list';
-            const snap = await get(child(ref(db), `trash/${type}/${id}`));
-            if(snap.exists()){
-                const data = snap.val();
-                delete data.deletedBy; delete data.deletedAt; delete data.type;
-                await set(ref(db, `${path}/${id}`), data);
-                await remove(ref(db, `trash/${type}/${id}`));
-                saveLog("RESTORE", `Restored item to ${path}`, "ระบบกู้คืน");
-                alert("กู้คืนข้อมูลสำเร็จ!");
-            }
-        };
+        window.deleteRule = (k) => confirm('ลบกฎข้อนี้?') && remove(ref(db, `rule_list/${k}`));
     </script>
 </body>
 </html>
