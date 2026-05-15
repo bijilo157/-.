@@ -613,7 +613,7 @@ window.cooldown = function(){
     let stop=end.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
     
     let typeLabel = (type === 'fam') ? 'แก๊ง' : 'แก๊ง';
-    let text=`ประกาศ รบกวน ${typeLabel} ${gang} ออกจากพื้นที่โรงพยาบาลภายใน ระยะเวลา 10 นาที เริ่มตั้งแต่เวลา ${start} ถึง ${stop} น. ขอบคุณครับ/ค่ะ`;
+    let text=`ประกาศ รบกวน ${typeLabel} ${gang} ออกจากพื้นที่โรงพยาบาลภายใน ระยะเวลา 10 นาที เริ่มตั้งแต่เวลา ${start} น. ถึง ${stop} น. ขอบคุณครับ/ค่ะ`;
     document.getElementById("coolFiveM").innerText="/gov "+text;
     document.getElementById("coolDiscord").innerText=`\`\`\`\n${text}\n\`\`\`\n<@&1335511632587128954> <@&1364843875105243206>`;
 }
