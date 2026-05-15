@@ -220,6 +220,7 @@ option { color: black !important; font-weight: normal; background: white; }
 <select id="warnLevel">
 <option value="1">ครั้งที่ 1</option>
 <option value="2">ครั้งที่ 2</option>
+<option value="3">ครั้งที่ 3 (BLACKLIST)</option>
 </select>
 
 <label>เลือกข้อกฎ</label>
@@ -564,7 +565,7 @@ window.deleteLog = async function(key){
     }
 }
 
-// --- 4. Logic Functions ---
+// --- 4. Logic Functions (แก้ไขระบบ 1, 2 และ 3 Blacklist) ---
 
 window.warn = function(){
     let select = document.getElementById("gang");
@@ -585,7 +586,8 @@ window.warn = function(){
     let fivem=`/gov ประกาศตักเตือน ${typeLabel} ${gang} เนื่องจาก ${reason} เตือนครั้งที่ ${level} รวม ตักเตือน ${level} ครั้ง ขอบคุณค่ะ/ครับ`;
     let discord=`📢 ประกาศตักเตือน\n${typeLabel} ${gang}\nเหตุผล : ${reason}\nเตือนครั้งที่ ${level}`;
 
-    if(level==2){
+    // ถ้าเลือกครั้งที่ 3 ให้เปลี่ยนเป็น Blacklist
+    if(level==3){
         if(status=="ยังไม่ชำระ"){
             fivem=`/gov ประกาศ Blacklist ${typeLabel} ${gang} เนื่องจาก ${reason} ขอบคุณครับ/ค่ะ`;
         }else{
@@ -593,6 +595,7 @@ window.warn = function(){
         }
         discord=`#  ⛔  __ BLACKLIST __ ⛔\n\n\`\`\`diff\n${typeLabel} : ${gang}\nหัวข้อ : BLACKLIST ข้อที่ ${ruleText} เนื่องจาก ${reason}\n( เมื่อเวลา ${time()} น. วันที่ ${date()} )\nค่าปรับ : ${fine} TD\n${statusText}\n\`\`\`\n\n<@&1335511632587128954> <@&1364843875105243206>`;
     }
+
     document.getElementById("warnFiveM").innerText=fivem;
     document.getElementById("warnDiscord").innerText=discord;
 }
